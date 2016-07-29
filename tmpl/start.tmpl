@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>GSS Johari Window</title>
+  <link href="/img/window.ico" name="favicon" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/johari.css">
+  <script type="text/javascript" src="/js/jquery-1.11.2.min.js"></script>
+  <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/js/spin.js"></script>
+  <script type="text/javascript" src="/js/johari_api.js"></script>
+  <script type="text/javascript" src="/js/johari.js"></script>
+
+
+<script type="text/javascript">
+
+</script>
+</head>
+<body onload="DisplayNavBar(); GetAllWords();">
+<div id="NavBar"></div>
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>What is this site?</center></div>
+          <div class="panel-body">
+          <p><img src="/img/johari-window.PNG" width="300" ALIGN=right></img>This program combines a congnitive psychology tool called the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> with Clifton Strength Finder themes.  You can create what is called a "Window" which looks like this image to the right.  Once you have created your window a link will be generated that you can share with your peers and they will be asked to choose up to 10 words they think best describes your personality.  Once all of your peers have submitted their feedback your window should be fully populated with insightful information!</p>
+          
+          <p>To get started follow these steps:</p>
+          <ol>
+            <li>Select up to 10 words that you think bests describes your personality from the table below</li>
+            <li>A link will be generated for you to share with peers and request they select up to 10 words that describes thier perception of you</li>
+            <li>As user sumbit their feedback you can view your window by clicking on the "My Current Window" link at the top</li>
+          </ol>
+  
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form class="form-inline" onSubmit="return false;">
+          <div class="form-group">
+            <label class="" for="Nickname">Nickname</label>
+            <input type="text" class="form-control" id="Nickname" placeholder="My New Window">
+          </div>
+          <button type="submit" class="btn btn-primary" onclick="CreateNewWindow();">Create</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div  style="position:fixed;top:50%;left:50%" id="GetAllWordsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="CreateWindowSpinner"></div>
+</body>
+<footer>
+</footer>
+</html>

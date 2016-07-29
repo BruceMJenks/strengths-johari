@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>GSS Johari Window</title>
+  <link href="/img/window.ico" name="favicon" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/johari.css">
+  <script type="text/javascript" src="/js/jquery-1.11.2.min.js"></script>
+  <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/js/spin.js"></script>
+  <script type="text/javascript" src="/js/johari_api.js"></script>
+  <script type="text/javascript" src="/js/johari.js"></script>
+
+
+<script type="text/javascript">
+
+</script>
+</head>
+<body onload="DisplayNavBar(); GetAllWords(); DisplayFeedbackItems();">
+<div id="NavBar"></div>
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DsiplayPane" class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>What is this site?</center></div>
+          <div class="panel-body">
+          <p><img src="/img/johari-window.PNG" width="300" ALIGN=right></img>This program combines a congnitive psychology tool called the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> with Clifton Strength Finder themes.  You can create what is called a "Window" which looks like this image to the right.  Once you have created your window a link will be generated that you can share with your peers and they will be asked to choose up to 10 words they think best describes your personality.  Once all of your peers have submitted their feedback your window should be fully populated with insightful information!</p>
+          <p><div id="UserProfileSubmissionHelp"></div></p>
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form id="feedbackform" class="form-inline" onSubmit="return false;">
+          <button type="submit" class="btn btn-primary" onclick="SubmitFeedback();">Submit</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div  style="position:fixed;top:50%;left:50%" id="GetAllWordsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetUserInfoSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="SubmitFeedbackSpinner"></div>
+</body>
+<footer>
+</footer>
+</html>

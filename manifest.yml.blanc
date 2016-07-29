@@ -1,0 +1,13 @@
+---
+applications:
+  - name: go-oauth-starter
+    memory: 128M
+    instances: 1
+    buildpack: https://github.com/kr/heroku-buildpack-go.git
+    command: go-oauth-starter
+    env:
+      DBURL:
+      CLIENTID:
+      CLIENTSECRET:
+      OAUTHURLPARAMS:
+      OAUTHDOMAIN:
