@@ -2,7 +2,7 @@
 
 var GetWordsUrl = "/get?words=t";
 var GetWindowsUrl = "/get?windows=t";
-var GetSumissionStatsUrl = "/get?submissions=t&pane=";
+var GetSubmissionStatsUrl = "/get?submissions=t&pane=";
 var GetWindowPaneDataUrl = "/get?panedata=t&pane=";
 var GetUserInfoUrl = "/get?user=t&pane=";
 var GetSubmissionHistory = "/get?history=t&pane=";
@@ -227,7 +227,7 @@ function GetSumissionStats(pane) {
   var spinner = new Spinner(SpinOpts).spin( target );
   
   $.ajax({
-    url: GetSumissionStatsUrl + pane,
+    url: GetSubmissionStatsUrl + pane,
     type: 'get',
     dataType: 'json',
     success: function (data) {
@@ -383,7 +383,7 @@ function DisplayPanel() {
     '<div class="panel panel-success">' +
       '<div class="panel-heading"><center>Welcome to your very own personality window pane!</center></div>' +
       '<div class="panel-body">' +
-        '<p>Please use this link with to request feedback feeback from your peers</p>' +
+        '<p>Please use this link to request feedback from your peers</p>' +
         '<p><ul><li><a href="'+sharableLink+'">'+sharableLink+'</a></li></ul></p>' +
       '</div>' +
     '</div>' +
@@ -393,7 +393,7 @@ function DisplayPanel() {
 function DisplayEmptyPanel() {
   $('#DsiplayPane').html('<div class="panel-group">' +
     '<div class="panel panel-warning">' +
-      '<div class="panel-heading"><center>You currently Have no sessions to Display</center></div>' +
+      '<div class="panel-heading"><center>You currently have no sessions to display</center></div>' +
       '<div class="panel-body">' +
         '<p>Please return to the <a href="/">main site</a> and start a new session </p>' +
       '</div>' +
@@ -415,7 +415,7 @@ function DisplayEmptyFeedbackPanel() {
 function DisplayFeedbackItems() {
   var pane = location.search.split('pane=')[1]
   if ( !pane ) {
-    alert("There was no 'pane=<sessionid>' in the url stream please make sure you have the correct URl")
+    alert("There was no 'pane=<sessionid>' in the url string please make sure you have the correct url")
     DisplayEmptyFeedbackPanel();
     $('#feedbackform').html("");
     return
@@ -434,7 +434,7 @@ function DisplayUserProfile(pane){
     success: function (data) {
       spinner.stop(target);
       var emailname = '<span style="color:blue">' + data.email + "</span>"
-      $('#UserProfileSubmissionHelp').html('User with email address of ' + emailname+ ' has asekd you to kindly sumbit personality feedback' +
+      $('#UserProfileSubmissionHelp').html('User with email address of ' + emailname+ ' has asked you to kindly submit personality feedback' +
       '<p><ol>' +
         '<li>Please select between 5 to 10 words that you think best describes ' + emailname + ' personality</li>' +
         '<li>Click submit at the bottom once you have finished making your selection</li>' +
