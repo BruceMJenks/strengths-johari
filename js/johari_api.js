@@ -379,10 +379,17 @@ function ClearFilterHistory() {
 
 function DisplayPanel() {
   var sharableLink = BASEURL+'/feedback?pane='+CurrentPane;
-  $('#DsiplayPane').html('<div class="panel-group">' +
+  $('#DisplayPane').html('<div class="panel-group">' +
     '<div class="panel panel-success">' +
       '<div class="panel-heading"><center>Welcome to your very own personality window pane!</center></div>' +
       '<div class="panel-body">' +
+        '<p><center><img src="/img/johari-window.PNG" width="300" ALIGN=center></center></p>' +
+        '<p><ul>' + 
+          '<li><b>Arena:</b> Adjectives/Themes that are selected by both you and your peers are placed into the Open or Arena quadrant</li>' + 
+          '<li><b>Facade:</b> Adjectives/Themes selected only by you and not by any of your peers are placed into the Hidden or Façade quadrant</li>' +
+          '<li><b>Blind:</b> Adjectives/Themes that are not selected by you but selected by your peers are placed into the Blind Spot quadrant</li>' +
+          '<li><b>Unknown:</b> Adjectives/Themes that were not selected by either you or your peers remain in the Unknown quadrant</li>' +
+        '</ul></p>' +
         '<p>Please use this link to request feedback from your peers</p>' +
         '<p><ul><li><a href="'+sharableLink+'">'+sharableLink+'</a></li></ul></p>' +
       '</div>' +
@@ -391,7 +398,7 @@ function DisplayPanel() {
 }
 
 function DisplayEmptyPanel() {
-  $('#DsiplayPane').html('<div class="panel-group">' +
+  $('#DisplayPane').html('<div class="panel-group">' +
     '<div class="panel panel-warning">' +
       '<div class="panel-heading"><center>You currently have no sessions to display</center></div>' +
       '<div class="panel-body">' +
@@ -402,7 +409,7 @@ function DisplayEmptyPanel() {
 }
 
 function DisplayEmptyFeedbackPanel() {
-  $('#DsiplayPane').html('<div class="panel-group">' +
+  $('#DisplayPane').html('<div class="panel-group">' +
     '<div class="panel panel-warning">' +
       '<div class="panel-heading"><center>You might be in the wrong place</center></div>' +
       '<div class="panel-body">' +
