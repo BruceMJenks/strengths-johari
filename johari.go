@@ -303,12 +303,14 @@ func verifyLogin(r *http.Request) bool {
   If not logged in write error to ResponseWritter and return false 
   otherwise return true
 */
-func checkLogin(w http.ResponseWriter, r *http.Request) bool {
+func checkLogin(w http.ResponseWriter, r *http.Request, fail bool) bool {
   sr := new(statusResponse)
   if !verifyLogin(r) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusUnauthorized)
-		w.Write(sr.getJson("Not Authorized"))
+    if fail {
+      w.Header().Set("Content-Type", "application/json")
+      w.WriteHeader(http.StatusUnauthorized)
+  		w.Write(sr.getJson("Not Authorized"))
+    }
     return false
 	}
   return true
@@ -320,7 +322,7 @@ func checkLogin(w http.ResponseWriter, r *http.Request) bool {
 func getHandler(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   sr := new(statusResponse)
-  if !checkLogin(w, r) {return}
+  if !checkLogin(w, r, true) {return}
   
   uid, err := getSessionUid(r)
   if err != nil {
@@ -663,7 +665,7 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 func postHandler(w http.ResponseWriter, r *http.Request) {
   w.Header().Set("Content-Type", "application/json")
   sr := new(statusResponse)
-  if !checkLogin(w, r) {return}
+  if !checkLogin(w, r, true) {return}
   
   uid, err := getSessionUid(r)
   if err != nil {
@@ -821,16 +823,27 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 
 
 func windowHandler(w http.ResponseWriter, r *http.Request) {
-  if !checkLogin(w, r) {return}
+  if !checkLogin(w, r, false) {
+    http.Redirect(w, r, BASEURL, http.StatusFound)
+    return
+  }
   windowPageTemplate.Execute(w, BASEURL)
 }
 
 func feedbackHandler(w http.ResponseWriter, r *http.Request) {
-  if !checkLogin(w, r) {return}
+  if !checkLogin(w, r, false) {
+    vals := r.URL.Query()
+    pane := vals.Get("pane")
+    http.Redirect(w, r, BASEURL + "?feedbackpane=" + pane, http.StatusFound)
+    return
+  }
   feedbackPageTemplate.Execute(w, BASEURL)
 }
 func thanksHandler(w http.ResponseWriter, r *http.Request) {
-  if !checkLogin(w, r) {return}
+  if !checkLogin(w, r, false) {
+    http.Redirect(w, r, BASEURL, http.StatusFound)
+    return
+  }
   thanksPageTemplate.Execute(w, BASEURL)
 }
 
