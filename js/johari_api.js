@@ -86,8 +86,8 @@ function CreateNewWindow() {
     }
   }
   
-  if (words.length < 5 || words.lenght > 10) {
-    alert("You must choose 5 to 10 words in order for this thing to work ;-)");
+  if (words.length < 5 || words.lenght > 20) {
+    alert("You must choose 5 to 20 words in order for this thing to work ;-)");
     return;
   }
   
@@ -443,7 +443,7 @@ function DisplayUserProfile(pane){
       var emailname = '<span style="color:blue">' + data.email + "</span>"
       $('#UserProfileSubmissionHelp').html('User with email address of ' + emailname+ ' has asked you to kindly submit personality feedback' +
       '<p><ol>' +
-        '<li>Please select between 5 to 10 words that you think best describes ' + emailname + ' personality</li>' +
+        '<li>Please select between 5 to 20 words that you think best describes ' + emailname + ' personality</li>' +
         '<li>Click submit at the bottom once you have finished making your selection</li>' +
       '</ol></p>' +
       '<p>Please note this is not an anonymous submission and your feedback is most welcome and appreciated!  The primary goal of this exercise is to help give the subjects insightful external perspectives that enable them to grow as individuals</p>');
