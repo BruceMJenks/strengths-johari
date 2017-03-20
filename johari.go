@@ -716,7 +716,14 @@ func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
     return
   }
   
-  _, err = dbi.SQLSession.Exec(fmt.Sprintf("INSERT INTO sessions VALUES('%s', '%s', '%s')", time.Now(), sessionID, req.Nickname))
+  stmt, err  := dbi.SQLSession.Prepare("INSERT INTO sessions VALUES(?,?,?)")
+  if err != nil {
+    w.WriteHeader(http.StatusInternalServerError)
+    w.Write(sr.getJson("Preparing nickname insert failed: " + err.Error()))
+    return
+  }
+  _, err = stmt.Exec(time.Now().Format("2006-01-02 15:04:05"), sessionID, req.Nickname)
+  //_, err = dbi.SQLSession.Exec(fmt.Sprintf("INSERT INTO sessions VALUES('%s', '%s', '%s')", time.Now().Format(time.RFC3339), sessionID, req.Nickname))
   if err != nil {
     w.WriteHeader(http.StatusInternalServerError)
     w.Write(sr.getJson("Creating nickname failed: " + err.Error()))
