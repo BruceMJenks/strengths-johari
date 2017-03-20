@@ -198,6 +198,7 @@ function GetUserWindows() {
         DisplayEmptyPanel();
         return
       }
+      setCurrentPain(); // if pane is set then change to that pane
       AllPanes = data;
       DisplayPanel();
       DisplayCurrentPane();
@@ -207,6 +208,20 @@ function GetUserWindows() {
       alert('FAILED to create window: ' + data.responseJSON.errmessage);
     }
   });
+}
+
+function setCurrentPain() {
+  var query = location.search.substr(1);
+  var result = {};
+  query.split("&").forEach(function(part) {
+    var item = part.split("=");
+    result[item[0]] = decodeURIComponent(item[1]);
+  });
+  if ( result.hasOwnProperty("pane") ) {
+    console.log("updated pane with " + result["pane"] );
+    CurrentPane = result["pane"];
+  }
+  console.log("pane is default with " + CurrentPane );
 }
 
 function DisplayCurrentPane() {
