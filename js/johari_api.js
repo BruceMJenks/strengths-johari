@@ -265,7 +265,7 @@ function BuildJohariWindow() {
       '<td class="windowtitle">Not Known to Self</td>' +
     '</tr>' +
     '<tr>' +
-      '<td class="windowtitle">Kown to Others</td>' +
+      '<td class="windowtitle">Known to Others</td>' +
       '<td class="windowwords"><div id="JohariWindow-arena"></div></td>' +
       '<td class="windowwords"><div id="JohariWindow-blind"></div></td>' +
     '</tr>' +
@@ -284,7 +284,7 @@ function BuildCliftonWindow() {
       '<td class="windowtitle">Not Known to Self</td>' +
     '</tr>' +
     '<tr>' +
-      '<td class="windowtitle">Kown to Others</td>' +
+      '<td class="windowtitle">Known to Others</td>' +
       '<td class="windowwords"><div id="CliftonWindow-arena"></div></td>' +
       '<td class="windowwords"><div id="CliftonWindow-blind"></div></td>' +
     '</tr>' +
