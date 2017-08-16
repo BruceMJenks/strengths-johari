@@ -981,7 +981,7 @@ func main() {
 		ClientID:     CLIENTID,
 		ClientSecret: CLIENTSECRET,
 		RedirectURL:  BASEURL + "/logincallback",
-		Scopes:       []string{"profile", "email", "https://www.googleapis.com/auth/gmail.compose"},
+		Scopes:       []string{"profile", "email"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
 			TokenURL: "https://accounts.google.com/o/oauth2/token",
