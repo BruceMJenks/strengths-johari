@@ -1,0 +1,228 @@
+{{ define "headers"}}
+
+  <title>Clifton Johari Window</title>
+  <link href="/img/window.ico" name="favicon" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="/assets/css/johari.css">
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <script type="text/javascript" src="/assets/js/spin.js"></script>
+  <script type="text/javascript" src="/assets/js/johari_api.js"></script>
+  <script type="text/javascript" src="/assets/js/johari.js"></script>
+  
+{{ end }}
+
+
+{{ define "navbar" }}
+<nav class="navbar navbar-inverse">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/">GSS Johari Window</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li><a href="/window">My Current Window</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Previous Windows <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <div id="PreviousWindowItems"></div>
+          </ul>
+        </li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+      </ul>
+    </div><!--/.nav-collapse --> 
+  </div><!--/.container-fluid --> 
+</nav>
+{{ end }}
+
+
+{{ define "startpage" }}
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>What is this site?</center></div>
+          <div class="panel-body">
+          <p><img src="/img/johari-window.PNG" width="300" ALIGN=right></img>This program combines a cognitive psychology tool called the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> with Clifton Strength Finder themes.  You can create what is called a "Window" which looks like this image to the right.  Once you have created your window a link will be generated that you can share with your peers and they will be asked to choose up to 20 words they think best describes your personality.  Once all of your peers have submitted their feedback your window should be fully populated with insightful information!</p>
+          
+          <p>To get started follow these steps:</p>
+          <ol>
+            <li>Select up to 20 words that you think bests describes your personality from the table below</li>
+            <li>A link will be generated for you to share with peers and request they select up to 20 words that describes their perception of you</li>
+            <li>As users submit their feedback you can view your window by clicking on the "My Current Window" link at the top</li>
+            <li>All created windows will be available from the "Previous Windows" dropdown menu</li>
+          </ol>
+  
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form class="form-inline" onSubmit="return false;">
+          <div class="form-group">
+            <label class="" for="Nickname">Nickname</label>
+            <input type="text" class="form-control" id="Nickname" placeholder="My New Window">
+          </div>
+          <button type="submit" class="btn btn-primary" onclick="CreateNewWindow();">Create</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div  style="position:fixed;top:50%;left:50%" id="GetAllWordsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="CreateWindowSpinner"></div>
+
+{{ end }}
+
+
+{{ define "thanks" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DsiplayPane" class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>THANKS</center></div>
+          <div class="panel-body">
+          <p><center><img src="/img/thanks.jpg" width="400"></img></center></p>
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+    
+</div> <!-- END CONTAINER -->
+
+<p></p>
+{{ end }}
+
+{{ define "windows" }}
+
+<div class="container">
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DisplayPane"></div>
+      <p></p>
+      <div id="SumbissionStats"></div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-5">
+      <div id="JohariWindow"></div>
+    </div> <!-- END COLUMN -->
+    
+    <div class="col-sm-5">
+      <div id="CliftonWindow"></div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-1"></div>
+  </div> <!-- END ROW -->
+  <hr>
+  <div class="row">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-10">
+      <form class="form-inline" onSubmit="return false;">
+        
+        <div class="form-group">
+          <label class="" for="SearchUser">User</label>
+          <input type="text" class="form-control" id="SearchUser" placeholder="Search Users">
+        </div>
+        <div class="form-group">
+          <label class="" for="SearchTheme">Theme</label>
+          <input type="text" class="form-control" id="SearchTheme" placeholder="Search Themes">
+        </div>
+        <div class="form-group">
+          <label class="" for="SearchADJ">Words</label>
+          <input type="text" class="form-control" id="SearchADJ" placeholder="Search Adjectives">
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="FilterHistory(true);">Filter</button>
+        <button type="submit" class="btn btn-primary" onclick="ClearFilterHistory();">Clear</button>
+      </form>
+      <p></p>
+      <div id="SumbissionHistory"></div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-1"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTIANER -->
+
+<div  style="position:fixed;top:50%;left:50%" id="GetWindowsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetSubmissionSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="PopWindowPanesSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetHistorySpinner"></div>
+
+{{ end }}
+
+
+{{ define "feedback" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DsiplayPane" class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>What is this site?</center></div>
+          <div class="panel-body">
+          <p><img src="/img/johari-window.PNG" width="300" ALIGN=right></img>This program combines a cognitive psychology tool called the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> with Clifton Strength Finder themes.  You can create what is called a "Window" which looks like this image to the right.  Once you have created your window a link will be generated that you can share with your peers and they will be asked to choose up to 10 words they think best describes your personality.  Once all of your peers have submitted their feedback your window should be fully populated with insightful information!</p>
+          <p><div id="UserProfileSubmissionHelp"></div></p>
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form id="feedbackform" class="form-inline" onSubmit="return false;">
+          <button type="submit" class="btn btn-primary" onclick="SubmitFeedback();">Submit</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div  style="position:fixed;top:50%;left:50%" id="GetAllWordsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetUserInfoSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="SubmitFeedbackSpinner"></div>
+
+{{ end }}

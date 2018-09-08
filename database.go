@@ -1,9 +1,9 @@
-
 package main
 
 import (
 	"database/sql"
 	"errors"
+
 	_ "github.com/go-sql-driver/mysql" // source the driver for database/sql but don't call it directly
 )
 
@@ -28,11 +28,9 @@ func NewDBI() (*DBInstance, error) {
 	return dbi, nil
 }
 
-/*
-	creates a new database session.  Caller needs to call Close() when done
-*/
+// ConnectDB creates a new database session.  Caller needs to call Close() when done
 func (dbi *DBInstance) ConnectDB() error {
-	sess, err := sql.Open(DBTYPE, DBURL)
+	sess, err := sql.Open(DBTYPE, dbURL)
 	if err != nil {
 		return errors.New("can not connect to database: " + err.Error())
 	}
