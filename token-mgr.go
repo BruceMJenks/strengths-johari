@@ -16,10 +16,12 @@ var (
 	tokenTable = "users"
 )
 
+// EncryptedText convert string into encrypted form
 type EncryptedText struct {
 	String string
 }
 
+// TokenTuple represents database row in the users table
 type TokenTuple struct {
 	UserID       int           `json:"userid"`
 	UserName     string        `json:"username"`
@@ -31,7 +33,7 @@ var NoTokenFound = errors.New("Token Manager: No Refresh Token Found")
 
 // Value encrypt data going into database
 func (et EncryptedText) Value() (driver.Value, error) {
-	gcm, err := newGCM(EncryptionKey)
+	gcm, err := newGCM(encryptionKey)
 	if err != nil {
 		return driver.Value(""), fmt.Errorf("CIPHER ERROR: %s", err)
 	}
@@ -53,7 +55,7 @@ func (et *EncryptedText) Scan(value interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Could not decode string: %s", err)
 	}
-	gcm, err := newGCM(EncryptionKey)
+	gcm, err := newGCM(encryptionKey)
 	if err != nil {
 		return fmt.Errorf("CIPHER ERROR: %s", err)
 	}

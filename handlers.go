@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/etcd/store"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 )
@@ -220,7 +219,7 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := getSessionUid(r)
+	uid, err := getSessionUID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(sr.getJson("Could not fetch your user id: " + err.Error()))
@@ -385,15 +384,15 @@ func writeSubmissionStats(w http.ResponseWriter, vals url.Values, uid int) {
 	WriteJsonResponse(w, res)
 }
 
-/*
-
- */
+// WindowPanes represents the johari window panes
 type WindowPanes struct {
 	Arena   []string `json:"arena"`
 	Blind   []string `json:"blind"`
 	Facade  []string `json:"facade"`
 	Unknown []string `json:"unknown"`
 }
+
+// JCWindows marries joahir and clifton panes
 type JCWindows struct {
 	Johari  WindowPanes `json:"johari"`
 	Clifton WindowPanes `json:"clifton"`
@@ -419,6 +418,7 @@ func writeJCWindowPanes(w http.ResponseWriter, vals url.Values, uid int) {
 	WriteJsonResponse(w, res)
 }
 
+// GetWindowPanesFromDB generate JCWindows struct from databse
 func GetWindowPanesFromDB(res *JCWindows, uid int, sess string) error {
 	dbi, err := NewDBI()
 	if err != nil {
@@ -578,7 +578,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := getSessionUid(r)
+	uid, err := getSessionUID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(sr.getJson("Could not fetch your user id: " + err.Error()))
@@ -594,6 +594,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateNewWindow creates a new johari/clifton window
 func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
 	sr := new(statusResponse)
 	type Req struct {
@@ -661,10 +662,7 @@ func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
 	WriteJsonResponse(w, res)
 }
 
-/*
-  - subjects should not submit feedback to themselves
-  - users can not submit multiple feedbacks for the same subject
-*/
+// SubmitFeedback - subjects should not submit feedback to themselves , users can not submit multiple feedbacks for the same subject
 func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	sr := new(statusResponse)
 
@@ -771,14 +769,14 @@ func thanksHandler(w http.ResponseWriter, r *http.Request) {
 /*
   Get the user name from session and query for uid
 */
-func getSessionUid(r *http.Request) (int, error) {
-	session, err := store.Get(r, sessionName)
+func getSessionUID(r *http.Request) (int, error) {
+	session, err := cookieStore.Get(r, sessionName)
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("Failed to get session: %s", err.Error()))
+		return 0, fmt.Errorf(fmt.Sprintf("Failed to get session: %s", err.Error()))
 	}
 	email := session.Values["Email"]
 	if email == nil || email == "" {
-		return 0, errors.New(fmt.Sprintf("Could not get email from session cookie"))
+		return 0, fmt.Errorf(fmt.Sprintf("Could not get email from session cookie"))
 	}
 
 	dbi, err := NewDBI()

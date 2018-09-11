@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
@@ -74,12 +75,16 @@ func WriteJsonResponse(w http.ResponseWriter, data interface{}) {
 	return true if logged in and false if not
 */
 func verifyLogin(r *http.Request) bool {
+
 	session, err := cookieStore.Get(r, sessionName)
 	if err != nil {
 		fmt.Printf("Failed to get session: %s", err)
 		return false
 	}
-	if session.Values["LoggedIn"] != "yes" {
+	// if our session has expired then re-login
+	tok := session.Values["AuthToken"].(*oauth2.Token)
+	if (tok.Expiry.Unix() - time.Now().Unix()) < 0 {
+		fmt.Printf("%s:%s: session expired\n", r.Method, r.URL.Path)
 		return false
 	}
 	return true
@@ -107,44 +112,44 @@ func checkLogin(w http.ResponseWriter, r *http.Request, fail bool) bool {
 	default baseurl to http://localhost:8080 for testing
 */
 func ParseApllicationCred() {
-	VCAP_ENV := os.Getenv("VCAP_APPLICATION")
-	LOCALBASEURL = BASEURL + ":" + os.Getenv("PORT")
-	if VCAP_ENV == "" {
+	vcapENV := os.Getenv("VCAP_APPLICATION")
+	localBaseURL = baseURL + ":" + os.Getenv("PORT")
+	if vcapENV == "" {
 		fmt.Println("VCAP_APPLICATION ENV variable not found")
-		BASEURL += ":" + os.Getenv("PORT")
-		fmt.Printf("Using url %s for callback\n", BASEURL)
+		baseURL += ":" + os.Getenv("PORT")
+		fmt.Printf("Using url %s for callback\n", baseURL)
 		return
 	}
-	fmt.Printf("%v\n", VCAP_ENV)
+	fmt.Printf("%v\n", vcapENV)
 
 	type VCAP_APP struct {
 		URIs []string `json:"uris"`
 	}
 	MyApp := new(VCAP_APP)
 
-	err := json.Unmarshal([]byte(VCAP_ENV), &MyApp)
+	err := json.Unmarshal([]byte(vcapENV), &MyApp)
 	if err != nil {
 		fmt.Printf("Failed to decode VCAP_APP: %s\n", err)
 		return
 	}
 
 	for i := range MyApp.URIs {
-		BASEURL = "https://" + MyApp.URIs[i]
+		baseURL = "https://" + MyApp.URIs[i]
 		break
 	}
-	fmt.Printf("Using url %s for callback\n", BASEURL)
+	fmt.Printf("Using url %s for callback\n", baseURL)
 }
 
 func ParseServiceCred() {
-	VCAP_ENV := os.Getenv("VCAP_SERVICES")
-	if VCAP_ENV == "" {
+	vcapENV := os.Getenv("VCAP_SERVICES")
+	if vcapENV == "" {
 		fmt.Println("VCAP_SERVICES ENV variable not found")
 		fmt.Printf("Using DBURL %s\n", os.Getenv("DBURL"))
-		DBURL = os.Getenv("DBURL")
+		dbURL = os.Getenv("DBURL")
 		return
 	}
 	type Cred struct {
-		Uri      string `json:"uri"`
+		URI      string `json:"uri"`
 		Hostname string `json:"hostname"`
 		Port     int    `json:"port"`
 		Database string `json:"name"`
@@ -159,14 +164,14 @@ func ParseServiceCred() {
 	}
 	MyService := new(DBService)
 
-	err := json.Unmarshal([]byte(VCAP_ENV), &MyService)
+	err := json.Unmarshal([]byte(vcapENV), &MyService)
 	if err != nil {
 		fmt.Printf("Failed to decode VCAP_SERVICES: %s\n", err)
 		return
 	}
 	// only care about the first one found because we hard coded it with p-mysql in DBService struct
 	for i := range MyService.SQLService {
-		DBURL = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+		dbURL = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
 			MyService.SQLService[i].Credentials.User,
 			MyService.SQLService[i].Credentials.Pass,
 			MyService.SQLService[i].Credentials.Hostname,
@@ -174,7 +179,7 @@ func ParseServiceCred() {
 			MyService.SQLService[i].Credentials.Database)
 		break
 	}
-	if DBURL == "" {
+	if dbURL == "" {
 		fmt.Println("ERROR DBURL is not set!!")
 	}
 }
@@ -206,16 +211,16 @@ func main() {
 	ParseApllicationCred()
 	ParseServiceCred()
 
-	CLIENTID = os.Getenv("CLIENTID")
-	CLIENTSECRET = os.Getenv("CLIENTSECRET")
-	OauthURLParams = os.Getenv("OAUTHURLPARAMS")
-	OauthDomain = os.Getenv("OAUTHDOMAIN")
+	clientID = os.Getenv("CLIENTID")
+	clientSecret = os.Getenv("CLIENTSECRET")
+	oauthURLParams = os.Getenv("OAUTHURLPARAMS")
+	oauthDomain = os.Getenv("OAUTHDOMAIN")
 	sessionName = os.Getenv("SESSION_NAME")
 	cookieStore = sessions.NewCookieStore([]byte(os.Getenv("COOKIE_STORE_KEY")))
 	encryptionKey = os.Getenv("PRIVATE_ENCRYPTION_KEY")
 	//DBURL = os.Getenv("DBURL")
 
-	LoginCfg = &oauth2.Config{
+	loginCfg = &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		RedirectURL:  baseURL + "/logincallback",
