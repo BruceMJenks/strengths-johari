@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/gob"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -16,26 +17,28 @@ import (
 )
 
 var (
-	cookieStore    *sessions.CookieStore
-	sessionName    string
-	clientID       string
-	clientSecret   string
-	oauthURLParams string
-	oauthDomain    string
-	dbURL          string
-	authURL        string
-	tokenURL       string
-	encryptionKey  string
+	dbi            *DBInstance
+	CookieStore    *sessions.CookieStore
+	SessionName    string
+	ClientID       string
+	ClientSecret   string
+	OauthURLParams string
+	OauthDomain    string
+	AuthURL        string
+	TokenURL       string
+	EncryptionKey  string
 	baseURL        = "http://localhost"
 	localBaseURL   string // used for testing purposes
-	loginCfg       *oauth2.Config
+	LoginCfg       *oauth2.Config
 
-	mainPage                 = template.Must(template.ParseFiles("tmpl/mainPage.tmpl"))
-	mainTemplates            = template.Must(template.ParseFiles("tmpl/mainTemplates.tmpl"))
-	windowPage               = template.Must(template.ParseFiles("tmpl/windowPage.tmpl"))
-	feedbackPage             = template.Must(template.ParseFiles("tmpl/feedbackPage.tmpl"))
-	thanksPage               = template.Must(template.ParseFiles("tmpl/thanksPage.tmpl"))
-	notAuthenticatedTemplate = template.Must(template.ParseFiles("tmpl/noPermissionPage.tmpl"))
+	MainPage                 = template.Must(template.ParseFiles("tmpl/mainPage.tmpl"))
+	MainTemplates            = template.Must(template.ParseFiles("tmpl/mainTemplates.tmpl"))
+	WindowPage               = template.Must(template.ParseFiles("tmpl/windowPage.tmpl"))
+	FeedbackPage             = template.Must(template.ParseFiles("tmpl/feedbackPage.tmpl"))
+	ThanksPage               = template.Must(template.ParseFiles("tmpl/thanksPage.tmpl"))
+	NotAuthenticatedTemplate = template.Must(template.ParseFiles("tmpl/noPermissionPage.tmpl"))
+
+	DisableAuth = flag.Bool("no-auth", false, "Flag to disable authentication")
 )
 
 /*
@@ -48,21 +51,19 @@ type statusResponse struct {
 /*
 	Build the statusResponse struct and return marshalled version of struct
 */
-func (sr *statusResponse) getJson(s string) []byte {
+func (sr *statusResponse) getJSON(s string) []byte {
 	sr.Status = s
 	jsr, _ := json.Marshal(sr)
 	return jsr
 }
 
-/*
-   conversts struct into json object and writes it back to responseWriter
-*/
-func WriteJsonResponse(w http.ResponseWriter, data interface{}) {
+// WriteJSONResponse conversts struct into json object and writes it back to responseWriter
+func WriteJSONResponse(w http.ResponseWriter, data interface{}) {
 	sr := new(statusResponse)
 	jdata, err := json.Marshal(data)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Failed to marshal data: " + err.Error()))
+		w.Write(sr.getJSON("Failed to marshal data: " + err.Error()))
 		return
 	}
 
@@ -76,12 +77,21 @@ func WriteJsonResponse(w http.ResponseWriter, data interface{}) {
 */
 func verifyLogin(r *http.Request) bool {
 
-	session, err := cookieStore.Get(r, sessionName)
+	if *DisableAuth {
+		return true
+	}
+
+	session, err := CookieStore.Get(r, SessionName)
 	if err != nil {
 		fmt.Printf("Failed to get session: %s", err)
 		return false
 	}
 	// if our session has expired then re-login
+
+	if session.Values["AuthToken"] == nil {
+		return false
+	}
+
 	tok := session.Values["AuthToken"].(*oauth2.Token)
 	if (tok.Expiry.Unix() - time.Now().Unix()) < 0 {
 		fmt.Printf("%s:%s: session expired\n", r.Method, r.URL.Path)
@@ -100,7 +110,7 @@ func checkLogin(w http.ResponseWriter, r *http.Request, fail bool) bool {
 		if fail {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write(sr.getJson("Not Authorized"))
+			w.Write(sr.getJSON("Not Authorized"))
 		}
 		return false
 	}
@@ -111,16 +121,16 @@ func checkLogin(w http.ResponseWriter, r *http.Request, fail bool) bool {
 	unmarshal ENV variable VCAP_APPLICATION and set the BASEURL string
 	default baseurl to http://localhost:8080 for testing
 */
-func ParseApllicationCred() {
+// ParseApllicationCred unmarshal ENV variable VCAP_APPLICATION and set the baseURL string
+func ParseApllicationCred() (myBaseURL string) {
 	vcapENV := os.Getenv("VCAP_APPLICATION")
-	localBaseURL = baseURL + ":" + os.Getenv("PORT")
+	localBaseURL = "http://localhost:" + os.Getenv("PORT")
 	if vcapENV == "" {
 		fmt.Println("VCAP_APPLICATION ENV variable not found")
-		baseURL += ":" + os.Getenv("PORT")
-		fmt.Printf("Using url %s for callback\n", baseURL)
-		return
+		myBaseURL += ":" + os.Getenv("PORT")
+		fmt.Printf("Using url %s for callback\n", myBaseURL)
+		return myBaseURL
 	}
-	fmt.Printf("%v\n", vcapENV)
 
 	type VCAP_APP struct {
 		URIs []string `json:"uris"`
@@ -130,17 +140,19 @@ func ParseApllicationCred() {
 	err := json.Unmarshal([]byte(vcapENV), &MyApp)
 	if err != nil {
 		fmt.Printf("Failed to decode VCAP_APP: %s\n", err)
-		return
+		return myBaseURL
 	}
 
 	for i := range MyApp.URIs {
-		baseURL = "https://" + MyApp.URIs[i]
+		myBaseURL = "https://" + MyApp.URIs[i]
 		break
 	}
-	fmt.Printf("Using url %s for callback\n", baseURL)
+	fmt.Printf("Using url %s for callback\n", myBaseURL)
+	return myBaseURL
 }
 
-func ParseServiceCred() {
+// ParseServiceCred returns the database connection string
+func ParseServiceCred() (dbURL string) {
 	vcapENV := os.Getenv("VCAP_SERVICES")
 	if vcapENV == "" {
 		fmt.Println("VCAP_SERVICES ENV variable not found")
@@ -182,19 +194,20 @@ func ParseServiceCred() {
 	if dbURL == "" {
 		fmt.Println("ERROR DBURL is not set!!")
 	}
+	return dbURL
 }
 
-func newRouter() *mux.Router {
+func NewRouter() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", rootHandler).Methods("GET")
 	r.HandleFunc("/index.html", LoginStart).Methods("GET")
 	r.HandleFunc("/logincallback", logincallbackHandler).Methods("GET")
-	r.HandleFunc("/logout/", logoutHandler).Methods("GET")
+	r.HandleFunc("/logout", logoutHandler).Methods("GET")
 
 	// api Calls
 	r.HandleFunc("/get", getHandler).Methods("GET")
-	r.HandleFunc("/post", postHandler).Methods("GET")
+	r.HandleFunc("/post", postHandler).Methods("POST")
 
 	r.HandleFunc("/window", windowHandler).Methods("GET")
 	r.HandleFunc("/feedback", feedbackHandler).Methods("GET")
@@ -208,37 +221,44 @@ func newRouter() *mux.Router {
 
 func main() {
 	gob.Register(&oauth2.Token{})
-	ParseApllicationCred()
-	ParseServiceCred()
+	baseURL = ParseApllicationCred()
 
-	clientID = os.Getenv("CLIENTID")
-	clientSecret = os.Getenv("CLIENTSECRET")
-	oauthURLParams = os.Getenv("OAUTHURLPARAMS")
-	oauthDomain = os.Getenv("OAUTHDOMAIN")
-	sessionName = os.Getenv("SESSION_NAME")
-	cookieStore = sessions.NewCookieStore([]byte(os.Getenv("COOKIE_STORE_KEY")))
-	encryptionKey = os.Getenv("PRIVATE_ENCRYPTION_KEY")
-	//DBURL = os.Getenv("DBURL")
+	dbi, err := NewDBI(ParseServiceCred())
+	if err != nil {
+		fmt.Println("Failed to connect to database")
+		panic(err)
+	}
+	defer dbi.Close()
 
-	loginCfg = &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+	ClientID = os.Getenv("CLIENTID")
+	ClientSecret = os.Getenv("CLIENTSECRET")
+	OauthURLParams = os.Getenv("OAUTHURLPARAMS")
+	OauthDomain = os.Getenv("OAUTHDOMAIN")
+	SessionName = os.Getenv("SESSION_NAME")
+	CookieStore = sessions.NewCookieStore([]byte(os.Getenv("COOKIE_STORE_KEY")))
+	EncryptionKey = os.Getenv("PRIVATE_ENCRYPTION_KEY")
+	AuthURL = os.Getenv("AUTH_URL")
+	TokenURL = os.Getenv("TOKEN_URL")
+
+	LoginCfg = &oauth2.Config{
+		ClientID:     ClientID,
+		ClientSecret: ClientSecret,
 		RedirectURL:  baseURL + "/logincallback",
 		Scopes:       []string{"profile"},
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-			TokenURL: "https://accounts.google.com/o/oauth2/token",
+			AuthURL:  AuthURL,
+			TokenURL: TokenURL,
 		},
 	}
 
 	fmt.Printf("Going to use port %s\n", os.Getenv("PORT"))
 
-	err := http.ListenAndServe(":"+os.Getenv("PORT"), context.ClearHandler(http.DefaultServeMux))
+	err = http.ListenAndServe(":"+os.Getenv("PORT"), context.ClearHandler(http.DefaultServeMux))
 	if err != nil {
 		fmt.Printf("Failed to start http server: %s\n", err)
 	}
 
-	r := newRouter()
+	r := NewRouter()
 	err = http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), r)
 	if err != nil {
 		panic(err)

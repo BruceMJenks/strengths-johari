@@ -7,20 +7,16 @@ import (
 	_ "github.com/go-sql-driver/mysql" // source the driver for database/sql but don't call it directly
 )
 
-var (
-	DBTYPE = "mysql"
-)
-
+// DBInstance represents the existing database connection
 type DBInstance struct {
 	SQLSession *sql.DB
+	DBURL      string
+	DBType     string
 }
 
-/*
-	create a new DBInstance struct and return it to caller
-	caller is expected to close the database instance dbi.Close()
-*/
-func NewDBI() (*DBInstance, error) {
-	dbi := new(DBInstance)
+// NewDBI creates a new databse connection
+func NewDBI(dbURL string) (*DBInstance, error) {
+	dbi := &DBInstance{nil, dbURL, "mysql"}
 	err := dbi.ConnectDB()
 	if err != nil {
 		return nil, err
@@ -30,7 +26,7 @@ func NewDBI() (*DBInstance, error) {
 
 // ConnectDB creates a new database session.  Caller needs to call Close() when done
 func (dbi *DBInstance) ConnectDB() error {
-	sess, err := sql.Open(DBTYPE, dbURL)
+	sess, err := sql.Open(dbi.DBType, dbi.DBURL)
 	if err != nil {
 		return errors.New("can not connect to database: " + err.Error())
 	}

@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -36,8 +35,8 @@ import (
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !verifyLogin(r) {
-		url := loginCfg.AuthCodeURL("")
-		url = url + oauthURLParams
+		url := LoginCfg.AuthCodeURL("")
+		url = url + OauthURLParams
 		params := r.URL.Query()
 		paramkeys := make([]string, 0)
 		for k := range params {
@@ -59,7 +58,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
-	mainPage.Execute(w, "")
+	MainPage.Execute(w, "")
 }
 
 /*
@@ -71,15 +70,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 */
 func logincallbackHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
-	tok, err := loginCfg.Exchange(oauth2.NoContext, code)
+	tok, err := LoginCfg.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		notAuthenticatedTemplate.Execute(w, err.Error())
+		NotAuthenticatedTemplate.Execute(w, err.Error())
 		return
 	}
 
 	// get the users profile from google
-	CLIENT := loginCfg.Client(oauth2.NoContext, tok)
+	CLIENT := LoginCfg.Client(oauth2.NoContext, tok)
 	resp, ee := CLIENT.Get("https://www.googleapis.com/plus/v1/people/me")
 	if ee != nil {
 		fmt.Fprintf(w, "Fetching profile err: %s", ee)
@@ -91,13 +90,13 @@ func logincallbackHandler(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &p)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		notAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
 		return
 	}
 
 	if p.Emails == nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		notAuthenticatedTemplate.Execute(w, template.HTML(fmt.Sprintf("Could not get user profile info: %s", body)))
+		NotAuthenticatedTemplate.Execute(w, template.HTML(fmt.Sprintf("Could not get user profile info: %s", body)))
 		return
 	}
 
@@ -106,18 +105,18 @@ func logincallbackHandler(w http.ResponseWriter, r *http.Request) {
 	   rootHandler Calls verifyLogin which returns false because of expired cookie error.
 	   So the user now has to relogin.  So trash the cookie if it exists and start fresh
 	*/
-	session, _ := cookieStore.Get(r, sessionName)
+	session, _ := CookieStore.Get(r, SessionName)
 	session.Save(r, w)
 
-	session, err = cookieStore.Get(r, sessionName)
+	session, err = CookieStore.Get(r, SessionName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		notAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
 		return
 	}
 
 	for i := range p.Emails {
-		if strings.Contains(p.Emails[i].Value, oauthDomain) {
+		if strings.Contains(p.Emails[i].Value, OauthDomain) {
 			session.Values["Email"] = p.Emails[i].Value
 			break
 		}
@@ -135,7 +134,7 @@ func logincallbackHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			// so in this case user did get a access token it came with no refresh token. Since the database does not have the
 			// refresh token we must force the user to login again
-			http.Redirect(w, r, loginCfg.AuthCodeURL("")+oauthURLParams+"&approval_prompt=force", http.StatusFound)
+			http.Redirect(w, r, LoginCfg.AuthCodeURL("")+OauthURLParams+"&approval_prompt=force", http.StatusFound)
 			return
 		}
 	} else {
@@ -145,7 +144,8 @@ func logincallbackHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Printf("Token Database Update Error: %s\n", err) // can not be too verbose here as it could leak sensitive info
 			w.WriteHeader(http.StatusUnauthorized)
-			notAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+
+			NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
 			return
 		}
 	}
@@ -188,14 +188,14 @@ func LoginStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if user is not using https then redirect them
+	// if user is not using https then redirect through a secure endpoint.  But if basURL is localhost then assume this is a sandbox and let pass
 	if r.Header.Get("x-forwarded-proto") != "https" && baseURL != localBaseURL {
 		fmt.Printf("TLS handshake is https=false x-forwarded-proto=%s\n", r.Header.Get("x-forwarded-proto"))
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
 
-	mainPage.Execute(w, "")
+	MainPage.Execute(w, "")
 }
 
 /*
@@ -203,8 +203,8 @@ func LoginStart(w http.ResponseWriter, r *http.Request) {
 	root page for re-authentication
 */
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := cookieStore.Get(r, sessionName)
-	session.Values["LoggedIn"] = "no"
+	session, _ := CookieStore.Get(r, SessionName)
+	session.Values["Email"] = "nil"
 	session.Save(r, w)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -222,7 +222,7 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	uid, err := getSessionUID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Could not fetch your user id: " + err.Error()))
+		w.Write(sr.getJSON("Could not fetch your user id: " + err.Error()))
 		return
 	}
 
@@ -252,23 +252,17 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 
 func writePreviousWindows(w http.ResponseWriter, uid int) {
 	sr := new(statusResponse)
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db connection failed: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	type Res struct {
 		Pane     string `json:"pane"`
 		Nickname string `json:"nickname"`
 	}
+
 	res := make([]Res, 0)
-	rows, dberr := dbi.GetRowSet(fmt.Sprintf("SELECT DISTINCT s.session, s.nickname FROM sessions s JOIN subjects sj ON sj.session = s.session WHERE uid = %d ORDER by s.timecreated", uid))
-	if dberr != nil {
+	rows, err := dbi.GetRowSet(fmt.Sprintf(PREVIOUS_WINDOWS_QUERY, uid))
+	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Query Failed: " + err.Error()))
+		w.Write(sr.getJSON("Query Failed: " + err.Error()))
 		return
 	}
 	for rows.Next() {
@@ -277,12 +271,12 @@ func writePreviousWindows(w http.ResponseWriter, uid int) {
 		err := rows.Scan(&sess, &nickname)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(sr.getJson("Scan Failed: " + err.Error()))
+			w.Write(sr.getJSON("Scan Failed: " + err.Error()))
 			return
 		}
 		res = append(res, Res{sess, nickname})
 	}
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 /*
@@ -290,26 +284,18 @@ func writePreviousWindows(w http.ResponseWriter, uid int) {
 */
 func writeWords(w http.ResponseWriter) {
 	sr := new(statusResponse)
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db connection failed: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
-
 	type APIResponse struct {
 		Words []string `json:"words"`
 	}
 	res := APIResponse{}
-
+	var err error
 	res.Words, err = dbi.GetStringList("SELECT word FROM words order by 1")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Fetching words failed: " + err.Error()))
+		w.Write(sr.getJSON("Fetching words failed: " + err.Error()))
 		return
 	}
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 /*
@@ -317,14 +303,6 @@ func writeWords(w http.ResponseWriter) {
 */
 func writeWindows(w http.ResponseWriter, uid int) {
 	sr := new(statusResponse)
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db connection failed: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
-
 	type Window struct {
 		CreatedAt time.Time `json:"createdat"`
 		Session   string    `json:"session"`
@@ -334,7 +312,7 @@ func writeWindows(w http.ResponseWriter, uid int) {
 	rows, dberr := dbi.GetRowSet(fmt.Sprintf("SELECT s.timecreated, s.session, s.nickname FROM sessions s JOIN subjects sj ON sj.session = s.session WHERE sj.uid = %d order by 1", uid))
 	if dberr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Getting sessions fialed: " + dberr.Error()))
+		w.Write(sr.getJSON("Getting sessions fialed: " + dberr.Error()))
 		return
 	}
 
@@ -345,31 +323,23 @@ func writeWindows(w http.ResponseWriter, uid int) {
 		err := rows.Scan(&t, &s, &n)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(sr.getJson("Parsing tuple fialed: " + err.Error()))
+			w.Write(sr.getJSON("Parsing tuple fialed: " + err.Error()))
 			return
 		}
 		res = append(res, Window{t, s, n})
 	}
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 func writeSubmissionStats(w http.ResponseWriter, vals url.Values, uid int) {
 	sr := new(statusResponse)
-
+	var err error
 	sess := vals.Get("pane")
 	if sess == "" {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("no session id found url"))
+		w.Write(sr.getJSON("no session id found url"))
 		return
 	}
-
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db connection failed: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	type Res struct {
 		Submissions int `json:"submissions"`
@@ -378,24 +348,10 @@ func writeSubmissionStats(w http.ResponseWriter, vals url.Values, uid int) {
 	res.Submissions, err = dbi.GetIntValue(fmt.Sprintf("select count(*) from (SELECT DISTINCT uid FROM peers p WHERE session = '%s') sub", sess))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db error: " + err.Error()))
+		w.Write(sr.getJSON("db error: " + err.Error()))
 		return
 	}
-	WriteJsonResponse(w, res)
-}
-
-// WindowPanes represents the johari window panes
-type WindowPanes struct {
-	Arena   []string `json:"arena"`
-	Blind   []string `json:"blind"`
-	Facade  []string `json:"facade"`
-	Unknown []string `json:"unknown"`
-}
-
-// JCWindows marries joahir and clifton panes
-type JCWindows struct {
-	Johari  WindowPanes `json:"johari"`
-	Clifton WindowPanes `json:"clifton"`
+	WriteJSONResponse(w, res)
 }
 
 func writeJCWindowPanes(w http.ResponseWriter, vals url.Values, uid int) {
@@ -404,7 +360,7 @@ func writeJCWindowPanes(w http.ResponseWriter, vals url.Values, uid int) {
 	sess := vals.Get("pane")
 	if sess == "" {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("no session id found url"))
+		w.Write(sr.getJSON("no session id found url"))
 		return
 	}
 
@@ -412,90 +368,21 @@ func writeJCWindowPanes(w http.ResponseWriter, vals url.Values, uid int) {
 	derr := GetWindowPanesFromDB(res, uid, sess)
 	if derr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Getting panes resturn error: " + derr.Error()))
+		w.Write(sr.getJSON("Getting panes resturn error: " + derr.Error()))
 		return
 	}
-	WriteJsonResponse(w, res)
-}
-
-// GetWindowPanesFromDB generate JCWindows struct from databse
-func GetWindowPanesFromDB(res *JCWindows, uid int, sess string) error {
-	dbi, err := NewDBI()
-	if err != nil {
-		return err
-	}
-	defer dbi.Close()
-
-	jaq := fmt.Sprintf(JOHARI_ARENA_QUERY, sess)
-	jbq := fmt.Sprintf(JOHARI_BLIND_QUERY, sess, sess)
-	jfq := fmt.Sprintf(JOHARI_FACADE_QUERY, sess, sess)
-	juq := fmt.Sprintf(JOHARI_UNKOWN_QUERY, sess, sess)
-	caq := fmt.Sprintf(CLIFTON_ARENA_QUERY, sess)
-	cbq := fmt.Sprintf(CLIFTON_BLIND_QUERY, sess, sess)
-	cfq := fmt.Sprintf(CLIFTON_FACADE_QUERY, sess, sess)
-	cuq := fmt.Sprintf(CLIFTON_UNKOWN_QUERY, sess, sess)
-
-	res.Johari.Arena, err = dbi.GetStringList(jaq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", jaq, err)
-		return err
-	}
-	res.Johari.Blind, err = dbi.GetStringList(jbq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", jbq, err)
-		return err
-	}
-	res.Johari.Facade, err = dbi.GetStringList(jfq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", jfq, err)
-		return err
-	}
-	res.Johari.Unknown, err = dbi.GetStringList(juq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", juq, err)
-		return err
-	}
-
-	res.Clifton.Arena, err = dbi.GetStringList(caq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", caq, err)
-		return err
-	}
-	res.Clifton.Blind, err = dbi.GetStringList(cbq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", cbq, err)
-		return err
-	}
-	res.Clifton.Facade, err = dbi.GetStringList(cfq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", cfq, err)
-		return err
-	}
-	res.Clifton.Unknown, err = dbi.GetStringList(cuq)
-	if err != nil {
-		fmt.Printf("Query:%s\nError:%s\n", cuq, err)
-		return err
-	}
-	return nil
+	WriteJSONResponse(w, res)
 }
 
 func writeUserInfo(w http.ResponseWriter, vals url.Values) {
 	sr := new(statusResponse)
-
+	var err error
 	sess := vals.Get("pane")
 	if sess == "" {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("no session id found url"))
+		w.Write(sr.getJSON("no session id found url"))
 		return
 	}
-
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db conn error: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	type Res struct {
 		Email string `json:"email"`
@@ -504,29 +391,21 @@ func writeUserInfo(w http.ResponseWriter, vals url.Values) {
 	res.Email, err = dbi.GetStringValue(fmt.Sprintf("SELECT DISTINCT u.username FROM users u JOIN subjects s ON s.uid = u.id WHERE s.session = '%s'", sess))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Getting user info Fialed: " + err.Error()))
+		w.Write(sr.getJSON("Getting user info Fialed: " + err.Error()))
 		return
 	}
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 	sr := new(statusResponse)
-
+	var err error
 	sess := vals.Get("pane")
 	if sess == "" {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("no session id found url"))
+		w.Write(sr.getJSON("no session id found url"))
 		return
 	}
-
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db conn error: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	type User struct {
 		Themes []string `json:"themes"`
@@ -541,7 +420,7 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 	rows, dberr := dbi.GetRowSet(fmt.Sprintf("SELECT u.username, w.theme, w.word FROM peers p JOIN users u ON u.id = p.uid JOIN words w ON w.wid = p.word WHERE p.session = '%s'", sess))
 	if dberr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Geting submission history failed: " + err.Error()))
+		w.Write(sr.getJSON("Geting submission history failed: " + err.Error()))
 		return
 	}
 	for rows.Next() {
@@ -551,7 +430,7 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 		err := rows.Scan(&email, &theme, &word)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(sr.getJson("bad tuple found in history data: " + err.Error()))
+			w.Write(sr.getJSON("bad tuple found in history data: " + err.Error()))
 			return
 		}
 		_, ok := res.Users[email]
@@ -565,7 +444,7 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 			res.Users[email] = User{[]string{theme}, []string{word}}
 		}
 	}
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 /*
@@ -581,7 +460,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 	uid, err := getSessionUID(r)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Could not fetch your user id: " + err.Error()))
+		w.Write(sr.getJSON("Could not fetch your user id: " + err.Error()))
 		return
 	}
 
@@ -611,38 +490,30 @@ func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
 	err := decoder.Decode(&req)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("decoder error " + err.Error()))
+		w.Write(sr.getJSON("decoder error " + err.Error()))
 		return
 	}
 	sessionID := generateSessionID(uid)
-
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db connection failed: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	wids := make([]int, 0)
 	wids, err = dbi.GetIntList(fmt.Sprintf("SELECT wid FROM words WHERE word in ('%s')", strings.Join(req.Words, "','")))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("resolving word id's failed: " + err.Error()))
+		w.Write(sr.getJSON("resolving word id's failed: " + err.Error()))
 		return
 	}
 
 	stmt, err := dbi.SQLSession.Prepare("INSERT INTO sessions VALUES(?,?,?)")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Preparing nickname insert failed: " + err.Error()))
+		w.Write(sr.getJSON("Preparing nickname insert failed: " + err.Error()))
 		return
 	}
 	_, err = stmt.Exec(time.Now().Format("2006-01-02 15:04:05"), sessionID, req.Nickname)
 	//_, err = dbi.SQLSession.Exec(fmt.Sprintf("INSERT INTO sessions VALUES('%s', '%s', '%s')", time.Now().Format(time.RFC3339), sessionID, req.Nickname))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Creating nickname failed: " + err.Error()))
+		w.Write(sr.getJSON("Creating nickname failed: " + err.Error()))
 		return
 	}
 
@@ -655,24 +526,16 @@ func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
 	_, err = dbi.SQLSession.Exec(query)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Could not create window: " + err.Error()))
+		w.Write(sr.getJSON("Could not create window: " + err.Error()))
 		return
 	}
 	res.Pane = sessionID
-	WriteJsonResponse(w, res)
+	WriteJSONResponse(w, res)
 }
 
 // SubmitFeedback - subjects should not submit feedback to themselves , users can not submit multiple feedbacks for the same subject
 func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	sr := new(statusResponse)
-
-	dbi, err := NewDBI()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("db conn error: " + err.Error()))
-		return
-	}
-	defer dbi.Close()
 
 	type Req struct {
 		Pane  string   `json:"pane"`
@@ -680,16 +543,16 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	}
 	req := new(Req)
 	decoder := json.NewDecoder(r.Body)
-	err = decoder.Decode(&req)
+	err := decoder.Decode(&req)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("decoder error " + err.Error()))
+		w.Write(sr.getJSON("decoder error " + err.Error()))
 		return
 	}
 
 	if len(req.Words) <= 0 || req.Pane == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(sr.getJson(fmt.Sprintf("Missing words or session id in submission: %v", req)))
+		w.Write(sr.getJSON(fmt.Sprintf("Missing words or session id in submission: %v", req)))
 		return
 	}
 
@@ -697,12 +560,12 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	count, err = dbi.GetIntValue(fmt.Sprintf("SELECT count(*) FROM ( SELECT * FROM peers WHERE uid = %d AND session = '%s' UNION SELECT * from subjects WHERE uid = %d and session = '%s') sub", uid, req.Pane, uid, req.Pane))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Query error: " + err.Error()))
+		w.Write(sr.getJSON("Query error: " + err.Error()))
 		return
 	}
 	if count > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(sr.getJson("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
+		w.Write(sr.getJSON("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
 		return
 	}
 
@@ -710,7 +573,7 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	rows, dberr := dbi.GetRowSet(fmt.Sprintf("SELECT wid, word from words where word in ('%s')", strings.Join(req.Words, "','")))
 	if dberr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write(sr.getJson("Query error: " + dberr.Error()))
+		w.Write(sr.getJSON("Query error: " + dberr.Error()))
 		return
 	}
 	for rows.Next() {
@@ -719,7 +582,7 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 		err := rows.Scan(&id, &word)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write(sr.getJson("Scan error: " + err.Error()))
+			w.Write(sr.getJSON("Scan error: " + err.Error()))
 			return
 		}
 		words[word] = id
@@ -734,11 +597,11 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	_, err = dbi.SQLSession.Exec(q)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(sr.getJson("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
+		w.Write(sr.getJSON("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
 		return
 	}
 
-	w.Write(sr.getJson("success"))
+	w.Write(sr.getJSON("success"))
 }
 
 func windowHandler(w http.ResponseWriter, r *http.Request) {
@@ -746,7 +609,7 @@ func windowHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
-	windowPage.Execute(w, baseURL)
+	WindowPage.Execute(w, baseURL)
 }
 
 func feedbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -756,21 +619,21 @@ func feedbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, baseURL+"?feedbackpane="+pane, http.StatusFound)
 		return
 	}
-	feedbackPage.Execute(w, baseURL)
+	FeedbackPage.Execute(w, baseURL)
 }
 func thanksHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkLogin(w, r, false) {
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
-	thanksPage.Execute(w, baseURL)
+	ThanksPage.Execute(w, baseURL)
 }
 
 /*
   Get the user name from session and query for uid
 */
 func getSessionUID(r *http.Request) (int, error) {
-	session, err := cookieStore.Get(r, sessionName)
+	session, err := CookieStore.Get(r, SessionName)
 	if err != nil {
 		return 0, fmt.Errorf(fmt.Sprintf("Failed to get session: %s", err.Error()))
 	}
@@ -778,12 +641,6 @@ func getSessionUID(r *http.Request) (int, error) {
 	if email == nil || email == "" {
 		return 0, fmt.Errorf(fmt.Sprintf("Could not get email from session cookie"))
 	}
-
-	dbi, err := NewDBI()
-	if err != nil {
-		return 0, errors.New("db connection failed: " + err.Error())
-	}
-	defer dbi.Close()
 	return dbi.GetIntValue(fmt.Sprintf("SELECT id FROM users WHERE username = '%s' limit 1", email))
 }
 

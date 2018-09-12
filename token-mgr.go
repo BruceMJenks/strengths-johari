@@ -33,7 +33,7 @@ var NoTokenFound = errors.New("Token Manager: No Refresh Token Found")
 
 // Value encrypt data going into database
 func (et EncryptedText) Value() (driver.Value, error) {
-	gcm, err := newGCM(encryptionKey)
+	gcm, err := newGCM(EncryptionKey)
 	if err != nil {
 		return driver.Value(""), fmt.Errorf("CIPHER ERROR: %s", err)
 	}
@@ -55,7 +55,7 @@ func (et *EncryptedText) Scan(value interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Could not decode string: %s", err)
 	}
-	gcm, err := newGCM(encryptionKey)
+	gcm, err := newGCM(EncryptionKey)
 	if err != nil {
 		return fmt.Errorf("CIPHER ERROR: %s", err)
 	}
@@ -89,14 +89,8 @@ func newGCM(key string) (cipher.AEAD, error) {
 func GetToken(u string) (*TokenTuple, error) {
 
 	t := new(TokenTuple)
-	dbi, err := NewDBI()
-	if err != nil {
-		return t, err
-	}
-	defer dbi.Close()
-
 	q := fmt.Sprintf("SELECT * FROM %s WHERE username='%s' limit 1", tokenTable, u)
-	err = dbi.SQLSession.QueryRow(q).Scan(&t.UserID, &t.UserName, &t.RefreshToken)
+	err := dbi.SQLSession.QueryRow(q).Scan(&t.UserID, &t.UserName, &t.RefreshToken)
 	if err == sql.ErrNoRows {
 		return t, NoTokenFound
 	} else if err != nil {
@@ -113,12 +107,6 @@ func GetToken(u string) (*TokenTuple, error) {
 func (t *TokenTuple) UpdateToken() error {
 	var q string
 	var dberr error
-
-	dbi, err := NewDBI()
-	if err != nil {
-		return err
-	}
-	defer dbi.Close()
 
 	tNew, err := GetToken(t.UserName)
 	if err == NoTokenFound {
