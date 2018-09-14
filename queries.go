@@ -42,31 +42,50 @@ const (
                     SELECT w.theme FROM words w JOIN subjects s ON s.word = w.wid WHERE s.session = '%s')
   `
 
-	PREVIOUS_WINDOWS_QUERY = `"SELECT DISTINCT s.session, s.nickname FROM sessions s JOIN subjects sj ON sj.session = s.session WHERE uid = %d ORDER by s.timecreated"`
+	PREVIOUS_WINDOWS_QUERY = `SELECT DISTINCT s.session, s.nickname FROM sessions s JOIN subjects sj ON sj.session = s.session WHERE uid = %d ORDER by s.timecreated`
 
-	CREATE_USERS_TABLE = `CREATE TABLE users (
+	CREATE_USERS_TABLE = `CREATE TABLE IF NOT EXISTS users (
     id serial,
     username varchar(255),
     refreshtoken varchar(4096)
   )`
 
-	CREATE_WORDS_TABLE = `CREATE TABLE words (
+	CREATE_WORDS_TABLE = `CREATE TABLE IF NOT EXISTS words (
     wid serial,
     theme text,
-    word text
-  )`
+    word text )`
 
-	CREATE_SUBJECTS_TABLE = `CREATE TABLE subjects (
+	SELECT_WORDS_TABLE = `SELECT count(*) FROM words`
+
+	CREATE_SUBJECTS_TABLE = `CREATE TABLE IF NOT EXISTS subjects (
     uid int,
     session text,
     word int
   )`
 
-	CREATE_PEERS_TABLE = `CREATE TABLE peers (
+	CREATE_PEERS_TABLE = `CREATE TABLE IF NOT EXISTS peers (
     uid int, 
     session text, 
     word int
   )`
+
+	CREAT_SESSIONS_TABLE = `CREATE TABLE IF NOT EXISTS sessions (
+    timecreated timestamp,
+    session text,
+    nickname text
+  )`
+
+	DROP_WORDS_TABLE    = `DROP TABLE IF EXISTS words`
+	DROP_PEERS_TABLE    = `DROP TABLE IF EXISTS peers`
+	DROP_USERS_TABLE    = `DROP TABLE IF EXISTS users`
+	DROP_SUBJECTS_TABLE = `DROP TABLE IF EXISTS subjects`
+	DROP_SESSIONS_TABLE = `DROP TABLE IF EXISTS sessions`
+
+	SELECT_USER_QUERY          = `SELECT * from users where username = '%s' LIMIT 1`
+	SELECT_USERNAME_QUERY      = `SELECT username FROM users where username = '%s' LIMIT 1`
+	SELECT_USERID_QUERY        = `SELECT id FROM users WHERE username = '%s' LIMIT 1`
+	SELECT_USER_PASSWORD_QUERY = `SELECT refreshtoken FROM users where username = '%s' limit 1`
+	INSERT_USER_QUERY          = `INSERT INTO users VALUES (DEFAULT, ?, ?)`
 
 	INSERT_WORDS = `insert into words values (DEFAULT, "Achiever", "Productive"),
   (DEFAULT, "Activator", "Catalytic"),

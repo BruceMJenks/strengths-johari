@@ -90,7 +90,7 @@ func GetToken(u string) (*TokenTuple, error) {
 
 	t := new(TokenTuple)
 	q := fmt.Sprintf("SELECT * FROM %s WHERE username='%s' limit 1", tokenTable, u)
-	err := dbi.SQLSession.QueryRow(q).Scan(&t.UserID, &t.UserName, &t.RefreshToken)
+	err := DBI.SQLSession.QueryRow(q).Scan(&t.UserID, &t.UserName, &t.RefreshToken)
 	if err == sql.ErrNoRows {
 		return t, NoTokenFound
 	} else if err != nil {
@@ -110,11 +110,9 @@ func (t *TokenTuple) UpdateToken() error {
 
 	tNew, err := GetToken(t.UserName)
 	if err == NoTokenFound {
-		q = fmt.Sprintf("INSERT INTO %s values(DEFAULT,'%s','%s')", tokenTable, t.UserName, t.RefreshToken)
-		_, dberr = dbi.SQLSession.Exec(q)
+		dberr = DBI.ExecTXQuery("INSERT INTO users values(DEFAULT, ?,?)", t.UserName, t.RefreshToken)
 	} else {
-		q = fmt.Sprintf("UPDATE %s SET username='%s', refreshtoken='%s' WHERE id = %d", tokenTable, t.UserName, t.RefreshToken, tNew.UserID)
-		_, dberr = dbi.SQLSession.Exec(q)
+		dberr = DBI.ExecTXQuery("UPDATE user SET username = ?, refreshtoken = ? WHERE id = ?", t.UserName, t.RefreshToken, tNew.UserID)
 	}
 
 	if dberr != nil {

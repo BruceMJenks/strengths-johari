@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	_ "github.com/go-sql-driver/mysql" // source the driver for database/sql but don't call it directly
 )
@@ -35,15 +36,54 @@ func (dbi *DBInstance) ConnectDB() error {
 	return nil
 }
 
-/*
-	close the database session
-*/
+// Close the database session
 func (dbi *DBInstance) Close() error {
 	if dbi.SQLSession != nil {
 		err := dbi.SQLSession.Close()
 		if err != nil {
 			return errors.New("can not close libpq session: " + err.Error())
 		}
+	}
+	return nil
+}
+
+// CreateSchema will create database tables and import words if tables do not exist
+func (dbi *DBInstance) CreateSchema() error {
+
+	// check if peers table exists
+	v, err := dbi.GetIntValue(SELECT_WORDS_TABLE)
+	if err == nil && v > 0 {
+		fmt.Println("Words table detected skipping schema installation")
+		return nil
+	} else {
+		fmt.Println("Words table not found starting schema installation")
+	}
+
+	// create tables
+	_, err = dbi.SQLSession.Exec(CREATE_WORDS_TABLE)
+	if err != nil {
+		return err
+	}
+	_, err = dbi.SQLSession.Exec(CREATE_PEERS_TABLE)
+	if err != nil {
+		return err
+	}
+	_, err = dbi.SQLSession.Exec(CREATE_SUBJECTS_TABLE)
+	if err != nil {
+		return err
+	}
+	_, err = dbi.SQLSession.Exec(CREATE_USERS_TABLE)
+	if err != nil {
+		return err
+	}
+	_, err = dbi.SQLSession.Exec(CREAT_SESSIONS_TABLE)
+	if err != nil {
+		return err
+	}
+	// insert words
+	_, err = dbi.SQLSession.Exec(INSERT_WORDS)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -125,4 +165,24 @@ func (dbi *DBInstance) GetStringValue(qstring string) (string, error) {
 		return v, err
 	}
 	return v, nil
+}
+
+// ExecTXQuery creates a transaction and executes given query with args
+func (dbi *DBInstance) ExecTXQuery(q string, args ...interface{}) error {
+	tx, err := dbi.SQLSession.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare(q)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }

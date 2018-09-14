@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+{{ template "headers" }}
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<script type="text/javascript">
+
+</script>
+</head>
+<body onload="PopulatePreviousWindows(); checkURLParms(); GetAllWords();">
+
+
+{{ template "navbar" }}
+
+{{ if .EnableOauth }}
+    {{ template "loginOauth" }}
+{{ else }}
+    {{ template "loginInternal"}}
+{{ end }}
+
+</body>
+<footer>
+</footer>
+</html>

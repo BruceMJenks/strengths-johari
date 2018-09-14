@@ -28,43 +28,43 @@ func GetWindowPanesFromDB(res *JCWindows, uid int, sess string) error {
 	cuq := fmt.Sprintf(CLIFTON_UNKOWN_QUERY, sess, sess)
 	var err error
 
-	res.Johari.Arena, err = dbi.GetStringList(jaq)
+	res.Johari.Arena, err = DBI.GetStringList(jaq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", jaq, err)
 		return err
 	}
-	res.Johari.Blind, err = dbi.GetStringList(jbq)
+	res.Johari.Blind, err = DBI.GetStringList(jbq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", jbq, err)
 		return err
 	}
-	res.Johari.Facade, err = dbi.GetStringList(jfq)
+	res.Johari.Facade, err = DBI.GetStringList(jfq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", jfq, err)
 		return err
 	}
-	res.Johari.Unknown, err = dbi.GetStringList(juq)
+	res.Johari.Unknown, err = DBI.GetStringList(juq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", juq, err)
 		return err
 	}
 
-	res.Clifton.Arena, err = dbi.GetStringList(caq)
+	res.Clifton.Arena, err = DBI.GetStringList(caq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", caq, err)
 		return err
 	}
-	res.Clifton.Blind, err = dbi.GetStringList(cbq)
+	res.Clifton.Blind, err = DBI.GetStringList(cbq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", cbq, err)
 		return err
 	}
-	res.Clifton.Facade, err = dbi.GetStringList(cfq)
+	res.Clifton.Facade, err = DBI.GetStringList(cfq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", cfq, err)
 		return err
 	}
-	res.Clifton.Unknown, err = dbi.GetStringList(cuq)
+	res.Clifton.Unknown, err = DBI.GetStringList(cuq)
 	if err != nil {
 		fmt.Printf("Query:%s\nError:%s\n", cuq, err)
 		return err

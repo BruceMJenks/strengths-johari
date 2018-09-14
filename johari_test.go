@@ -1,12 +1,15 @@
 package main_test
 
 import (
+	"bytes"
 	"encoding/gob"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,6 +17,26 @@ import (
 
 	. "github.com/pivotal-gss/johari"
 )
+
+func createUser(u string) {
+	baseURL := "http://localhost:" + os.Getenv("PORT")
+	hc := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	req, err := http.NewRequest("POST", baseURL+"/login/register", bytes.NewBuffer([]byte(u)))
+	req.Header.Add("X-Forwarded-Proto", "https")
+	resp, err := hc.Do(req)
+	if err != nil {
+		Fail(err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 302 {
+		b, _ := ioutil.ReadAll(resp.Body)
+		Fail(fmt.Sprintf("Create new user failed with status code: %d: %s: %s", resp.StatusCode, b, u))
+	}
+}
 
 var mockHTTPServer *http.Server
 var _ = BeforeSuite(func() {
@@ -49,16 +72,43 @@ var _ = BeforeSuite(func() {
 			panic(err)
 		}
 	}()
-	time.Sleep(1 * time.Second) // give time for http to star tup
 
-	// setup databsae connection
 	myDBURL := os.Getenv("DBURL")
 	if myDBURL == "" {
 		Fail("Must have DBURL environment variable set in order to connect to the database")
 	}
+
+	var err error
+	DBI, err = NewDBI(myDBURL)
+	if err != nil {
+		Fail(err.Error())
+	}
+	_, err = DBI.SQLSession.Exec("CREATE DATABASE jhandlerdb")
+	if err != nil {
+		Fail(err.Error())
+	}
+	_, err = DBI.SQLSession.Exec("use jhandlerdb")
+	if err != nil {
+		Fail(err.Error())
+	}
+	err = DBI.CreateSchema()
+	if err != nil {
+		Fail(err.Error())
+	}
+	time.Sleep(1 * time.Second) // give time for http to start up
+
+	// Create test users
+	createUser("{ \"user\": \"testuser1@user.email\", \"password\": \"Y2hhbmdlbWU=\"}")
+	createUser("{ \"user\": \"%s\", \"testuser2@user.email\": \"cGFzc3dvcmQ=\"}")
+
 })
 
 var _ = AfterSuite(func() {
+	_, err := DBI.SQLSession.Exec("DROP DATABASE jhandlerdb")
+	if err != nil {
+		Fail(err.Error())
+	}
+	DBI.Close()
 })
 
 var _ = Describe("API Handlers", func() {
@@ -66,42 +116,52 @@ var _ = Describe("API Handlers", func() {
 
 	var baseURL string
 	var hc *http.Client
-	var sc *securecookie.SecureCookie
 	var cookie *http.Cookie
+
 	BeforeEach(func() {
+
+		mockUser := "testuser1@user.email"
+		mockUserPass := "Y2hhbmdlbWU="
+		userBody := fmt.Sprintf("{ \"user\": \"%s\", \"password\": \"%s\"}", mockUser, mockUserPass)
 		baseURL = "http://localhost:" + os.Getenv("PORT")
 		hc = &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
 		}
-		sc = securecookie.New([]byte(EncryptionKey), []byte(EncryptionKey))
-		values := map[string]string{
-			"Email":     "testuser@user.email",
-			"AuthToken": "xxx",
-		}
-		encoded, err := sc.Encode(SessionName, values)
+
+		// Authenticate and save cookie
+		req, err := http.NewRequest("POST", baseURL+"/login/submit", bytes.NewBuffer([]byte(userBody)))
+		req.Header.Add("X-Forwarded-Proto", "https")
+		resp, err := hc.Do(req)
 		if err != nil {
 			Fail(err.Error())
 		}
-		cookie = &http.Cookie{
-			Name:  SessionName,
-			Value: encoded,
-			Path:  "/",
+		if resp.StatusCode != 302 {
+			b, _ := ioutil.ReadAll(resp.Body)
+			Fail(fmt.Sprintf("Response status is not 302: %d : %s", resp.StatusCode, b))
+		}
+
+		for _, c := range resp.Cookies() {
+			if c.Name == SessionName {
+				cookie = c // save the cookie for future use
+			}
+		}
+
+		if cookie == nil {
+			Fail("Could not acquire auth cookie")
 		}
 	})
-	JustBeforeEach(func() {})
+
 	Describe("testing the johari handlers", func() {
-		Context("when auth is disabled", func() {
-			*DisableAuth = true
+		Context("when internal auth is enabled", func() {
+
 			It("Root handler returns 200 response", func() {
 				req, err := http.NewRequest("GET", baseURL, nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
 				req.AddCookie(cookie)
 				resp, err := hc.Do(req)
-				if err != nil {
-					Fail(err.Error())
-				}
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(200))
 			})
 
@@ -110,15 +170,100 @@ var _ = Describe("API Handlers", func() {
 				req.Header.Add("X-Forwarded-Proto", "https")
 				req.AddCookie(cookie)
 				resp, err := hc.Do(req)
-				if err != nil {
-					Fail(err.Error())
-				}
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(302))
 				Expect(resp.Header.Get("Set-Cookie")).ShouldNot(Equal(""))
+			})
+
+			It("creating and sharing window works", func() {
+
+				var user1Pane string
+				//var user2Cookie *http.Cookie
+
+				By("/post?new=t creates a new window pane")
+				req, err := http.NewRequest("POST", baseURL+"/post?new=t", bytes.NewBuffer([]byte(`{ "nickname": "test-sample12345", "words": ["Aware","Inquisitive","Self-motivated","Driven","Meticulous","Vivid","Artistic","Serious","Questioning","Impatient","Collaborative"]}`)))
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(cookie)
+				Expect(err).ShouldNot(HaveOccurred())
+				resp, err := hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(201))
+				data := new(CreateWindowRes)
+				decoder := json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&data)).ShouldNot(HaveOccurred()) // no err expected
+				Expect(data.Pane).ShouldNot(BeEmpty())
+				//user1Pane = data.Pane
+
+				By("/window?pane=ID returns the users window pane")
+				req, err = http.NewRequest("GET", baseURL+"/window?pane="+data.Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+
+				By("/get?previouswindows=t should populate previous windows")
+				req, err = http.NewRequest("GET", baseURL+"/get?previouswindows=t", nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				wpdata := make([]WritePreiviouWindowRes, 0)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&wpdata)).ShouldNot(HaveOccurred())
+				Expect(len(wpdata)).NotTo(BeZero())
+
+				By("/get/submissions=t&pane=xxx")
+
+				By("/get?panedata=t&pane=xxx")
+				By("/get?history=t&pane=xxx")
+
+				By("a new user opens the shared pane")
+
+				By("the new user can not access the other users pane")
 			})
 		})
 	})
 
+})
+
+var _ = Describe("Database", func() {
+
+	myDBURL := os.Getenv("DBURL")
+	if myDBURL == "" {
+		Fail("Must have DBURL environment variable set in order to connect to the database")
+	}
+	var dbi *DBInstance
+	BeforeEach(func() {
+		var err error
+		dbi, err = NewDBI(myDBURL)
+		if err != nil {
+			Fail(err.Error())
+		}
+	})
+	Context("When database is empty", func() {
+		BeforeEach(func() {
+			dbi.SQLSession.Exec(DROP_PEERS_TABLE)
+			dbi.SQLSession.Exec(DROP_USERS_TABLE)
+			dbi.SQLSession.Exec(DROP_WORDS_TABLE)
+			dbi.SQLSession.Exec(DROP_SUBJECTS_TABLE)
+			dbi.SQLSession.Exec(DROP_SESSIONS_TABLE)
+		})
+		It("Creates the database tables", func() {
+			Expect(dbi.CreateSchema()).To(BeNil())
+			v, err := dbi.GetIntValue(SELECT_WORDS_TABLE)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(v).ShouldNot(BeZero())
+		})
+	})
+
+	Context("When Database is not empty", func() {
+		It("Creating schema tables does not error", func() {
+			Expect(dbi.CreateSchema()).To(BeNil())
+			Expect(dbi.CreateSchema()).To(BeNil())
+		})
+	})
 })
 
 var _ = Describe("VCAP variables", func() {

@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	dbi            *DBInstance
+	DBI            *DBInstance
 	CookieStore    *sessions.CookieStore
 	SessionName    string
 	ClientID       string
@@ -36,9 +36,10 @@ var (
 	WindowPage               = template.Must(template.ParseFiles("tmpl/windowPage.tmpl"))
 	FeedbackPage             = template.Must(template.ParseFiles("tmpl/feedbackPage.tmpl"))
 	ThanksPage               = template.Must(template.ParseFiles("tmpl/thanksPage.tmpl"))
+	LoginPage                = template.Must(template.ParseFiles("tmpl/loginPage.tmpl"))
 	NotAuthenticatedTemplate = template.Must(template.ParseFiles("tmpl/noPermissionPage.tmpl"))
 
-	DisableAuth = flag.Bool("no-auth", false, "Flag to disable authentication")
+	EnableOauth = flag.Bool("oauth", false, "Flag to disable authentication")
 )
 
 /*
@@ -77,10 +78,6 @@ func WriteJSONResponse(w http.ResponseWriter, data interface{}) {
 */
 func verifyLogin(r *http.Request) bool {
 
-	if *DisableAuth {
-		return true
-	}
-
 	session, err := CookieStore.Get(r, SessionName)
 	if err != nil {
 		fmt.Printf("Failed to get session: %s", err)
@@ -88,14 +85,28 @@ func verifyLogin(r *http.Request) bool {
 	}
 	// if our session has expired then re-login
 
-	if session.Values["AuthToken"] == nil {
-		return false
-	}
+	if *EnableOauth {
+		if session.Values["AuthToken"] == nil {
+			fmt.Printf("No Token Found in Session")
+			return false
+		}
 
-	tok := session.Values["AuthToken"].(*oauth2.Token)
-	if (tok.Expiry.Unix() - time.Now().Unix()) < 0 {
-		fmt.Printf("%s:%s: session expired\n", r.Method, r.URL.Path)
-		return false
+		tok := session.Values["AuthToken"].(*oauth2.Token)
+		if (tok.Expiry.Unix() - time.Now().Unix()) < 0 {
+			fmt.Printf("%s:%s: session expired\n", r.Method, r.URL.Path)
+			return false
+		}
+	} else {
+		if email, ok := session.Values["Email"].(string); ok {
+			_, err := DBI.GetStringValue(fmt.Sprintf(SELECT_USERNAME_QUERY, email))
+			if err != nil {
+				fmt.Printf("User not found in database: %s\n", err)
+				return false
+			}
+		} else {
+			fmt.Println("User not found from session cookie")
+			return false
+		}
 	}
 	return true
 }
@@ -202,6 +213,9 @@ func NewRouter() *mux.Router {
 
 	r.HandleFunc("/", rootHandler).Methods("GET")
 	r.HandleFunc("/index.html", LoginStart).Methods("GET")
+	r.HandleFunc("/login", loginHandler).Methods("GET")
+	r.HandleFunc("/login/submit", submitLoginHandler).Methods("POST")
+	r.HandleFunc("/login/register", registerUserHandler).Methods("POST")
 	r.HandleFunc("/logincallback", logincallbackHandler).Methods("GET")
 	r.HandleFunc("/logout", logoutHandler).Methods("GET")
 
@@ -223,12 +237,17 @@ func main() {
 	gob.Register(&oauth2.Token{})
 	baseURL = ParseApllicationCred()
 
-	dbi, err := NewDBI(ParseServiceCred())
+	var err error
+	DBI, err = NewDBI(ParseServiceCred())
 	if err != nil {
 		fmt.Println("Failed to connect to database")
 		panic(err)
 	}
-	defer dbi.Close()
+	defer DBI.Close()
+	err = DBI.CreateSchema()
+	if err != nil {
+		panic(err)
+	}
 
 	ClientID = os.Getenv("CLIENTID")
 	ClientSecret = os.Getenv("CLIENTSECRET")
