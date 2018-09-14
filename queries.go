@@ -87,6 +87,8 @@ const (
 	SELECT_USER_PASSWORD_QUERY = `SELECT refreshtoken FROM users where username = '%s' limit 1`
 	INSERT_USER_QUERY          = `INSERT INTO users VALUES (DEFAULT, ?, ?)`
 
+	SELECT_SUBJECT_SESSION_QUERY = `SELECT session FROM subjects WHERE uid = %d and session = '%s' LIMIT 1`
+
 	INSERT_WORDS = `insert into words values (DEFAULT, "Achiever", "Productive"),
   (DEFAULT, "Activator", "Catalytic"),
   (DEFAULT, "Adaptability", "Spontaneous"),

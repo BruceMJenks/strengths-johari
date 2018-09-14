@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
@@ -31,13 +31,13 @@ var (
 	localBaseURL   string // used for testing purposes
 	LoginCfg       *oauth2.Config
 
-	MainPage                 = template.Must(template.ParseFiles("tmpl/mainPage.tmpl"))
+	MainPage                 = template.Must(template.ParseFiles("tmpl/mainPage.tmpl", "tmpl/mainTemplates.tmpl"))
 	MainTemplates            = template.Must(template.ParseFiles("tmpl/mainTemplates.tmpl"))
-	WindowPage               = template.Must(template.ParseFiles("tmpl/windowPage.tmpl"))
-	FeedbackPage             = template.Must(template.ParseFiles("tmpl/feedbackPage.tmpl"))
-	ThanksPage               = template.Must(template.ParseFiles("tmpl/thanksPage.tmpl"))
-	LoginPage                = template.Must(template.ParseFiles("tmpl/loginPage.tmpl"))
-	NotAuthenticatedTemplate = template.Must(template.ParseFiles("tmpl/noPermissionPage.tmpl"))
+	WindowPage               = template.Must(template.ParseFiles("tmpl/windowPage.tmpl", "tmpl/mainTemplates.tmpl"))
+	FeedbackPage             = template.Must(template.ParseFiles("tmpl/feedbackPage.tmpl", "tmpl/mainTemplates.tmpl"))
+	ThanksPage               = template.Must(template.ParseFiles("tmpl/thanksPage.tmpl", "tmpl/mainTemplates.tmpl"))
+	LoginPage                = template.Must(template.ParseFiles("tmpl/loginPage.tmpl", "tmpl/mainTemplates.tmpl"))
+	NotAuthenticatedTemplate = template.Must(template.ParseFiles("tmpl/noPermissionPage.tmpl", "tmpl/mainTemplates.tmpl"))
 
 	EnableOauth = flag.Bool("oauth", false, "Flag to disable authentication")
 )
@@ -104,7 +104,6 @@ func verifyLogin(r *http.Request) bool {
 				return false
 			}
 		} else {
-			fmt.Println("User not found from session cookie")
 			return false
 		}
 	}
@@ -128,6 +127,19 @@ func checkLogin(w http.ResponseWriter, r *http.Request, fail bool) bool {
 	return true
 }
 
+// checkAuthorization verify the user request information has permission to access the session
+func checkAuthorization(w http.ResponseWriter, vals url.Values, uid int) bool {
+	sr := new(statusResponse)
+	_, err := DBI.GetStringValue(fmt.Sprintf(SELECT_SUBJECT_SESSION_QUERY, uid, vals.Get("pane")))
+	if err != nil {
+		fmt.Printf("Failed to find and authorize session: %s\n", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write(sr.getJSON("You are not authorized to access this window pane"))
+		return false
+	}
+	return true
+}
+
 /*
 	unmarshal ENV variable VCAP_APPLICATION and set the BASEURL string
 	default baseurl to http://localhost:8080 for testing
@@ -138,7 +150,7 @@ func ParseApllicationCred() (myBaseURL string) {
 	localBaseURL = "http://localhost:" + os.Getenv("PORT")
 	if vcapENV == "" {
 		fmt.Println("VCAP_APPLICATION ENV variable not found")
-		myBaseURL += ":" + os.Getenv("PORT")
+		myBaseURL = localBaseURL
 		fmt.Printf("Using url %s for callback\n", myBaseURL)
 		return myBaseURL
 	}
@@ -258,7 +270,6 @@ func main() {
 	EncryptionKey = os.Getenv("PRIVATE_ENCRYPTION_KEY")
 	AuthURL = os.Getenv("AUTH_URL")
 	TokenURL = os.Getenv("TOKEN_URL")
-
 	LoginCfg = &oauth2.Config{
 		ClientID:     ClientID,
 		ClientSecret: ClientSecret,
@@ -272,10 +283,10 @@ func main() {
 
 	fmt.Printf("Going to use port %s\n", os.Getenv("PORT"))
 
-	err = http.ListenAndServe(":"+os.Getenv("PORT"), context.ClearHandler(http.DefaultServeMux))
+	/*err = http.ListenAndServe(":"+os.Getenv("PORT"), context.ClearHandler(http.DefaultServeMux))
 	if err != nil {
 		fmt.Printf("Failed to start http server: %s\n", err)
-	}
+	}*/
 
 	r := NewRouter()
 	err = http.ListenAndServe(fmt.Sprintf(":%s", os.Getenv("PORT")), r)

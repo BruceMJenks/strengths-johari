@@ -32,10 +32,41 @@ func createUser(u string) {
 		Fail(err.Error())
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 302 {
+	if resp.StatusCode != 200 {
 		b, _ := ioutil.ReadAll(resp.Body)
 		Fail(fmt.Sprintf("Create new user failed with status code: %d: %s: %s", resp.StatusCode, b, u))
 	}
+}
+
+func authenitcateUser(u string) *http.Cookie {
+	baseURL := "http://localhost:" + os.Getenv("PORT")
+	hc := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	var cookie *http.Cookie
+	req, err := http.NewRequest("POST", baseURL+"/login/submit", bytes.NewBuffer([]byte(u)))
+	req.Header.Add("X-Forwarded-Proto", "https")
+	resp, err := hc.Do(req)
+	if err != nil {
+		Fail(err.Error())
+	}
+	if resp.StatusCode != 200 {
+		b, _ := ioutil.ReadAll(resp.Body)
+		Fail(fmt.Sprintf("Response status is not 302: %d : %s", resp.StatusCode, b))
+	}
+
+	for _, c := range resp.Cookies() {
+		if c.Name == SessionName {
+			cookie = c // save the cookie for future use
+		}
+	}
+
+	if cookie == nil {
+		Fail("Could not acquire auth cookie")
+	}
+	return cookie
 }
 
 var mockHTTPServer *http.Server
@@ -99,7 +130,7 @@ var _ = BeforeSuite(func() {
 
 	// Create test users
 	createUser("{ \"user\": \"testuser1@user.email\", \"password\": \"Y2hhbmdlbWU=\"}")
-	createUser("{ \"user\": \"%s\", \"testuser2@user.email\": \"cGFzc3dvcmQ=\"}")
+	createUser("{ \"user\": \"testuser2@user.email\", \"password\": \"cGFzc3dvcmQ=\"}")
 
 })
 
@@ -116,41 +147,21 @@ var _ = Describe("API Handlers", func() {
 
 	var baseURL string
 	var hc *http.Client
-	var cookie *http.Cookie
+	var user1cookie *http.Cookie
+	var user2Cookie *http.Cookie
+	var user1PaneData = `{ "nickname": "test-sample12345", "words": ["Aware","Inquisitive","Self-motivated","Driven","Meticulous","Vivid","Artistic","Serious","Questioning","Impatient","Collaborative"]}`
+	//var user1KnownField = "Aware"
+	// Authenticate and save cookie
 
 	BeforeEach(func() {
-
-		mockUser := "testuser1@user.email"
-		mockUserPass := "Y2hhbmdlbWU="
-		userBody := fmt.Sprintf("{ \"user\": \"%s\", \"password\": \"%s\"}", mockUser, mockUserPass)
 		baseURL = "http://localhost:" + os.Getenv("PORT")
 		hc = &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				return http.ErrUseLastResponse
 			},
 		}
-
-		// Authenticate and save cookie
-		req, err := http.NewRequest("POST", baseURL+"/login/submit", bytes.NewBuffer([]byte(userBody)))
-		req.Header.Add("X-Forwarded-Proto", "https")
-		resp, err := hc.Do(req)
-		if err != nil {
-			Fail(err.Error())
-		}
-		if resp.StatusCode != 302 {
-			b, _ := ioutil.ReadAll(resp.Body)
-			Fail(fmt.Sprintf("Response status is not 302: %d : %s", resp.StatusCode, b))
-		}
-
-		for _, c := range resp.Cookies() {
-			if c.Name == SessionName {
-				cookie = c // save the cookie for future use
-			}
-		}
-
-		if cookie == nil {
-			Fail("Could not acquire auth cookie")
-		}
+		user1cookie = authenitcateUser("{ \"user\": \"testuser1@user.email\", \"password\": \"Y2hhbmdlbWU=\"}")
+		user2Cookie = authenitcateUser("{ \"user\": \"testuser2@user.email\", \"password\": \"cGFzc3dvcmQ=\"}")
 	})
 
 	Describe("testing the johari handlers", func() {
@@ -159,7 +170,7 @@ var _ = Describe("API Handlers", func() {
 			It("Root handler returns 200 response", func() {
 				req, err := http.NewRequest("GET", baseURL, nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.AddCookie(cookie)
+				req.AddCookie(user1cookie)
 				resp, err := hc.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(200))
@@ -168,7 +179,7 @@ var _ = Describe("API Handlers", func() {
 			It("/logout sets a cookie and returns 302", func() {
 				req, err := http.NewRequest("GET", baseURL+"/logout", nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.AddCookie(cookie)
+				req.AddCookie(user1cookie)
 				resp, err := hc.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(302))
@@ -181,9 +192,9 @@ var _ = Describe("API Handlers", func() {
 				//var user2Cookie *http.Cookie
 
 				By("/post?new=t creates a new window pane")
-				req, err := http.NewRequest("POST", baseURL+"/post?new=t", bytes.NewBuffer([]byte(`{ "nickname": "test-sample12345", "words": ["Aware","Inquisitive","Self-motivated","Driven","Meticulous","Vivid","Artistic","Serious","Questioning","Impatient","Collaborative"]}`)))
+				req, err := http.NewRequest("POST", baseURL+"/post?new=t", bytes.NewBuffer([]byte(user1PaneData)))
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.AddCookie(cookie)
+				req.AddCookie(user1cookie)
 				Expect(err).ShouldNot(HaveOccurred())
 				resp, err := hc.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -192,12 +203,12 @@ var _ = Describe("API Handlers", func() {
 				decoder := json.NewDecoder(resp.Body)
 				Expect(decoder.Decode(&data)).ShouldNot(HaveOccurred()) // no err expected
 				Expect(data.Pane).ShouldNot(BeEmpty())
-				//user1Pane = data.Pane
+				user1Pane = data.Pane
 
 				By("/window?pane=ID returns the users window pane")
 				req, err = http.NewRequest("GET", baseURL+"/window?pane="+data.Pane, nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.AddCookie(cookie)
+				req.AddCookie(user1cookie)
 				resp, err = hc.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(200))
@@ -205,7 +216,7 @@ var _ = Describe("API Handlers", func() {
 				By("/get?previouswindows=t should populate previous windows")
 				req, err = http.NewRequest("GET", baseURL+"/get?previouswindows=t", nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
-				req.AddCookie(cookie)
+				req.AddCookie(user1cookie)
 				resp, err = hc.Do(req)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(resp.StatusCode).To(Equal(200))
@@ -214,14 +225,92 @@ var _ = Describe("API Handlers", func() {
 				Expect(decoder.Decode(&wpdata)).ShouldNot(HaveOccurred())
 				Expect(len(wpdata)).NotTo(BeZero())
 
-				By("/get/submissions=t&pane=xxx")
+				By("/get?submissions=t&pane=xxx when there are no responses")
+				req, err = http.NewRequest("GET", baseURL+"/get?submissions=t&pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				submissionResp := new(WriteSubmissionsResp)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&submissionResp)).ShouldNot(HaveOccurred())
+				Expect(submissionResp.Submissions).To(BeZero())
 
 				By("/get?panedata=t&pane=xxx")
-				By("/get?history=t&pane=xxx")
+				req, err = http.NewRequest("GET", baseURL+"/get?panedata=t&pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				jcWindows := new(JCWindows)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&jcWindows)).ShouldNot(HaveOccurred())
+				Expect(len(jcWindows.Johari.Facade)).NotTo(BeZero())  // all strengths should be unknown to others
+				Expect(len(jcWindows.Clifton.Facade)).NotTo(BeZero()) // all themes should be unknown to others
 
-				By("a new user opens the shared pane")
+				By("/get?history=t&pane=xxx")
+				req, err = http.NewRequest("GET", baseURL+"/get?history=t&pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				uHistResp := new(UsersHistory)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&uHistResp)).ShouldNot(HaveOccurred())
+				Expect(len(uHistResp.Users)).To(BeZero()) // there should be no submissions
+
+				By("/feedback?pane=xxx a new user opens the shared pane")
+				req, err = http.NewRequest("GET", baseURL+"/feedback?pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
 
 				By("the new user can not access the other users pane")
+				user2Cookie = authenitcateUser("{ \"user\": \"testuser2@user.email\", \"password\": \"cGFzc3dvcmQ=\"}")
+				req, err = http.NewRequest("GET", baseURL+"/window?pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user2Cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(401))
+
+				By("/post?feedback=t&pane=xxx the new user submits feedback")
+				req, err = http.NewRequest("POST", baseURL+"/post?feedback=t&pane=", bytes.NewBuffer([]byte(fmt.Sprintf(`{"pane": "%s", "words": ["Inquisitive","Energetic", "Catalytic", "Spontaneous", "Objective"]}`, user1Pane))))
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user2Cookie)
+				Expect(err).ShouldNot(HaveOccurred())
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+
+				By("there should be a submission")
+				req, err = http.NewRequest("GET", baseURL+"/get?submissions=t&pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				submissionResp = new(WriteSubmissionsResp)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&submissionResp)).ShouldNot(HaveOccurred())
+				Expect(submissionResp.Submissions).NotTo(BeZero())
+
+				By("subject user should be able to view feedback")
+				req, err = http.NewRequest("GET", baseURL+"/get?history=t&pane="+user1Pane, nil)
+				req.Header.Add("X-Forwarded-Proto", "https")
+				req.AddCookie(user1cookie)
+				resp, err = hc.Do(req)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(resp.StatusCode).To(Equal(200))
+				uHistResp = new(UsersHistory)
+				decoder = json.NewDecoder(resp.Body)
+				Expect(decoder.Decode(&uHistResp)).ShouldNot(HaveOccurred())
+				Expect(len(uHistResp.Users)).NotTo(BeZero()) // there should be no submissions
 			})
 		})
 	})

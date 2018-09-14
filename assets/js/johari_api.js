@@ -7,6 +7,8 @@ var GetWindowPaneDataUrl = "/get?panedata=t&pane=";
 var GetUserInfoUrl = "/get?user=t&pane=";
 var GetSubmissionHistory = "/get?history=t&pane=";
 var GetPreviousWindows = "/get?previouswindows=t"
+var LoginUserURL = "/login/submit"
+var LoginRegisterURL = "/login/register"
 
 var CreateWindowUrl = "/post?new=t";
 var FeedbackWindowUrl = "/post?feedback=t&pane=";
@@ -15,15 +17,27 @@ var CurrentPane = "";
 var AllPanes = [];
 var WindowHistoryData = {};
 
+function toogleLoadSpinner() {
+ if ( $('#loadspinner').hasClass("loader") ) {
+  $('#loadspinner').removeClass('loader').addClass('unloaded');
+ } else {
+  $('#loadspinner').removeClass('unloaded').addClass('loader');
+ }  
+
+}
+
+
+
 function GetAllWords() {
   var target = document.getElementById('GetAllWordsSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
 
   $.ajax({
     url: GetWordsUrl,
-    type: 'post',
+    type: 'get',
     dataType: 'json',
     success: function (data) {
+      toogleLoadSpinner();
       //#WordTableContents
       var tableHTML = '<table class="table table-bordered"><tbody>';
       var row = [5];
@@ -43,10 +57,9 @@ function GetAllWords() {
       }
       tableHTML += "</tbody></table>";
       $('#WordTableContents').html(tableHTML);
-      spinner.stop(target);
     },
     error: function(data) {
-        spinner.stop(target);
+      toogleLoadSpinner();
         alert('FAILED to fetch words: ' + data.responseJSON.errmessage);
     }});
 }
@@ -95,21 +108,20 @@ function CreateNewWindow() {
     nickname: $('#Nickname').val(),
     words: words
   } 
-  
-  var target = document.getElementById('CreateWindowSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+
+  toogleLoadSpinner();
   
   $.ajax({
     url: CreateWindowUrl,
     type: 'post',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       CurrentPane = data.pane;
       window.location.href = "/window?pane=" + CurrentPane;
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert('FAILED to create window: ' + data.responseJSON.errmessage);
     },
     data: JSON.stringify(PostDATA)
@@ -140,19 +152,18 @@ function SubmitFeedback() {
     words: words
   } 
   
-  var target = document.getElementById('SubmitFeedbackSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
   
   $.ajax({
     url: FeedbackWindowUrl + pane,
     type: 'post',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       window.location.href = "/thanks";
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert(data.responseJSON.errmessage);
     },
     data: JSON.stringify(PostDATA)
@@ -182,15 +193,14 @@ function PopulatePreviousWindows() {
 
 function GetUserWindows() {
   
-  var target = document.getElementById('GetWindowsSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
 
   $.ajax({
     url: GetWindowsUrl,
     type: 'get',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       if ( data.length >= 1 ) {
         CurrentPane = data[0].session;
       } else {
@@ -200,11 +210,12 @@ function GetUserWindows() {
       }
       setCurrentPain(); // if pane is set then change to that pane
       AllPanes = data;
-      DisplayPanel();
+      var sharableLink = BASEURL+'/feedback?pane='+CurrentPane;
+      $('#shareable-link').html('<ul><li><a href="' + sharableLink + '" target="_blank">'+ sharableLink + '</a>');
       DisplayCurrentPane();
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert('FAILED to create window: ' + data.responseJSON.errmessage);
     }
   });
@@ -238,19 +249,18 @@ function DisplayPane(pane) {
 
 function GetSumissionStats(pane) {
   
-  var target = document.getElementById('GetSubmissionSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
   
   $.ajax({
     url: GetSubmissionStatsUrl + pane,
     type: 'get',
     dataType: 'json',
     success: function (data) {
+      toogleLoadSpinner();
       $('#SumbissionStats').html('<table class="table table-sm table-inverse"><thead><tr><th>Number Of User Submissions</th><th>' + parseInt(data.submissions) + '</th></tr></thead></table>' );
-      spinner.stop(target);
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert(data.responseJSON.errmessage);
     }
   });
@@ -297,15 +307,14 @@ function BuildCliftonWindow() {
 }
 
 function PopulateJCWindows(pane){
-  var target = document.getElementById('PopWindowPanesSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
   
   $.ajax({
     url: GetWindowPaneDataUrl + pane,
     type: 'get',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       $('#JohariWindow-arena').html(data.johari.arena.join(", "))
       $('#JohariWindow-blind').html(data.johari.blind.join(", "))
       $('#JohariWindow-facade').html(data.johari.facade.join(", "))
@@ -317,28 +326,27 @@ function PopulateJCWindows(pane){
       $('#CliftonWindow-unknown').html(data.clifton.unknown.join(", "))
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert(data.responseJSON.errmessage);
     }
   });
 }
 
 function DisplayHistory(pane) {
-  var target = document.getElementById('GetHistorySpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
   
   $.ajax({
     url: GetSubmissionHistory + pane,
     type: 'get',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       WindowHistoryData = data.users;
       FilterHistory(false);
       
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert(data.responseJSON.errmessage);
     }
   });
@@ -392,7 +400,7 @@ function ClearFilterHistory() {
   FilterHistory(false);
 }
 
-function DisplayPanel() {
+/*function DisplayPanel() {
   var sharableLink = BASEURL+'/feedback?pane='+CurrentPane;
   $('#DisplayPane').html('<div class="panel-group">' +
     '<div class="panel panel-success">' +
@@ -410,7 +418,7 @@ function DisplayPanel() {
       '</div>' +
     '</div>' +
   '</div>');
-}
+}*/
 
 function DisplayEmptyPanel() {
   $('#DisplayPane').html('<div class="panel-group">' +
@@ -446,15 +454,14 @@ function DisplayFeedbackItems() {
 }
 
 function DisplayUserProfile(pane){
-  var target = document.getElementById('GetUserInfoSpinner');
-  var spinner = new Spinner(SpinOpts).spin( target );
+  toogleLoadSpinner();
   
   $.ajax({
     url: GetUserInfoUrl + pane,
     type: 'get',
     dataType: 'json',
     success: function (data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       var emailname = '<span style="color:blue">' + data.email + "</span>"
       $('#UserProfileSubmissionHelp').html('User with email address of ' + emailname+ ' has asked you to kindly submit personality feedback' +
       '<p><ol>' +
@@ -464,8 +471,51 @@ function DisplayUserProfile(pane){
       '<p>Please note this is not an anonymous submission and your feedback is most welcome and appreciated!  The primary goal of this exercise is to help give the subjects insightful external perspectives that enable them to grow as individuals</p>');
     },
     error: function(data) {
-      spinner.stop(target);
+      toogleLoadSpinner();
       alert(data.responseJSON.errmessage);
     }
+  });
+}
+
+
+function registerUser() {
+
+  var registerRequest = {
+    "user": $('#usernameField').val(),
+    "password": btoa($('#userpasswordField').val())
+  };
+
+  $.ajax({
+    url: LoginRegisterURL,
+    type: 'POST',
+    dataType: 'json',
+    success: function (data) {
+      window.location.href = "/login";
+    },
+    error: function(data) {
+      alert(data.responseJSON.errmessage);
+    },
+    data: JSON.stringify(registerRequest)
+  });
+}
+
+function loginUser() {
+
+  var loginRequest = {
+    "user": $('#usernameField').val(),
+    "password": btoa($('#userpasswordField').val())
+  };
+
+  $.ajax({
+    url: LoginUserURL,
+    type: 'POST',
+    dataType: 'json',
+    success: function (data) {
+      window.location.href = "/";
+    },
+    error: function(data) {
+      alert(data.responseJSON.errmessage);
+    },
+    data: JSON.stringify(loginRequest)
   });
 }

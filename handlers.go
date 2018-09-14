@@ -17,6 +17,13 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// HTMLTemplateVars used to pass variables to various html templates
+type HTMLTemplateVars struct {
+	Username    string
+	EnableOauth bool
+	BaseURL     string
+}
+
 /*
 	Root handler first checks if user is logged in.  If not logged in then authenticate
 	using oauth2.
@@ -34,7 +41,7 @@ import (
 */
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 
-	if !checkLogin(w, r, true) {
+	if !checkLogin(w, r, false) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
@@ -46,7 +53,10 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	MainPage.Execute(w, "")
+	err := MainPage.Execute(w, HTMLTemplateVars{"peopi", *EnableOauth, baseURL})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,7 +66,11 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
-	LoginPage.Execute(w, *EnableOauth)
+
+	err := LoginPage.Execute(w, HTMLTemplateVars{"", *EnableOauth, baseURL})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // LoginRequest is json request used to authenticate users.  password should be base64 encoded
@@ -67,6 +81,8 @@ type LoginRequest struct {
 
 // authenticates users via oauth or internal auth
 func submitLoginHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	sr := new(statusResponse)
 	if *EnableOauth {
 		url := LoginCfg.AuthCodeURL("")
 		url = url + OauthURLParams
@@ -90,42 +106,45 @@ func submitLoginHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&lr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
 
 	decodedPassword, err := base64.StdEncoding.DecodeString(lr.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
 
 	u, err := GetExistingUser(lr.User)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
 
 	err = u.MatchPassword(string(decodedPassword))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		NotAuthenticatedTemplate.Execute(w, template.HTML("Username or password incorrect"))
+		w.Write(sr.getJSON("Username or password incorrect"))
 		return
 	}
 
-	err = createNewSession(&w, r, lr.User, "")
+	err = createNewSession(w, r, lr.User, "")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusFound)
+	w.Write(sr.getJSON("success"))
 }
 
 // creates and stores a new user in the database for internal auth
 func registerUserHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	sr := new(statusResponse)
+
 	if *EnableOauth {
 		w.WriteHeader(http.StatusBadRequest)
 		NotAuthenticatedTemplate.Execute(w, template.HTML("Unable to register new user as Oauth is enabled"))
@@ -137,23 +156,24 @@ func registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&lr)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
 
 	decodedPassword, err := base64.StdEncoding.DecodeString(lr.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
 	_, err = NewUserMustNotExist(lr.User, string(decodedPassword))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		NotAuthenticatedTemplate.Execute(w, template.HTML(err.Error()))
+		w.Write(sr.getJSON(err.Error()))
 		return
 	}
-	http.Redirect(w, r, "/login", http.StatusFound)
+
+	w.Write(sr.getJSON("success"))
 }
 
 /*
@@ -290,7 +310,7 @@ func LoginStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	MainPage.Execute(w, "")
+	MainPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
 }
 
 /*
@@ -328,16 +348,24 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 		writeWindows(w, uid)
 	}
 	if vals.Get("submissions") == "t" {
-		writeSubmissionStats(w, vals, uid)
+		if checkAuthorization(w, vals, uid) {
+			writeSubmissionStats(w, vals, uid)
+		}
 	}
 	if vals.Get("panedata") == "t" {
-		writeJCWindowPanes(w, vals, uid)
+		if checkAuthorization(w, vals, uid) {
+			writeJCWindowPanes(w, vals, uid)
+		}
 	}
 	if vals.Get("user") == "t" {
-		writeUserInfo(w, vals)
+		if checkAuthorization(w, vals, uid) {
+			writeUserInfo(w, vals)
+		}
 	}
 	if vals.Get("history") == "t" {
-		writeHistoryData(w, vals)
+		if checkAuthorization(w, vals, uid) {
+			writeHistoryData(w, vals)
+		}
 	}
 	if vals.Get("previouswindows") == "t" {
 		writePreviousWindows(w, uid)
@@ -425,6 +453,11 @@ func writeWindows(w http.ResponseWriter, uid int) {
 	WriteJSONResponse(w, res)
 }
 
+// WriteSubmissionsResp returns number of submissions for given pane
+type WriteSubmissionsResp struct {
+	Submissions int `json:"submissions"`
+}
+
 func writeSubmissionStats(w http.ResponseWriter, vals url.Values, uid int) {
 	sr := new(statusResponse)
 	var err error
@@ -435,10 +468,7 @@ func writeSubmissionStats(w http.ResponseWriter, vals url.Values, uid int) {
 		return
 	}
 
-	type Res struct {
-		Submissions int `json:"submissions"`
-	}
-	res := new(Res)
+	res := new(WriteSubmissionsResp)
 	res.Submissions, err = DBI.GetIntValue(fmt.Sprintf("select count(*) from (SELECT DISTINCT uid FROM peers p WHERE session = '%s') sub", sess))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -491,6 +521,17 @@ func writeUserInfo(w http.ResponseWriter, vals url.Values) {
 	WriteJSONResponse(w, res)
 }
 
+// UserHistory themes and words from a pane submission
+type UserHistory struct {
+	Themes []string `json:"themes"`
+	Words  []string `json:"words"`
+}
+
+// UsersHistory array of user submissions
+type UsersHistory struct {
+	Users map[string]UserHistory `json:"users"`
+}
+
 func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 	sr := new(statusResponse)
 	var err error
@@ -501,16 +542,8 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 		return
 	}
 
-	type User struct {
-		Themes []string `json:"themes"`
-		Words  []string `json:"words"`
-	}
-	type Users struct {
-		Users map[string]User `json:"users"`
-	}
-
-	res := new(Users)
-	res.Users = make(map[string]User)
+	res := new(UsersHistory)
+	res.Users = make(map[string]UserHistory)
 	rows, dberr := DBI.GetRowSet(fmt.Sprintf("SELECT u.username, w.theme, w.word FROM peers p JOIN users u ON u.id = p.uid JOIN words w ON w.wid = p.word WHERE p.session = '%s'", sess))
 	if dberr != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -535,7 +568,7 @@ func writeHistoryData(w http.ResponseWriter, vals url.Values) {
 			u.Words = append(u.Words, word)
 			res.Users[email] = u
 		} else {
-			res.Users[email] = User{[]string{theme}, []string{word}}
+			res.Users[email] = UserHistory{[]string{theme}, []string{word}}
 		}
 	}
 	WriteJSONResponse(w, res)
@@ -634,15 +667,17 @@ func CreateNewWindow(w http.ResponseWriter, r *http.Request, uid int) {
 	WriteJSONResponse(w, res)
 }
 
+// SubmitFeedbackReq request for feedback submission
+type SubmitFeedbackReq struct {
+	Pane  string   `json:"pane"`
+	Words []string `json:"words"`
+}
+
 // SubmitFeedback - subjects should not submit feedback to themselves , users can not submit multiple feedbacks for the same subject
 func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 	sr := new(statusResponse)
 
-	type Req struct {
-		Pane  string   `json:"pane"`
-		Words []string `json:"words"`
-	}
-	req := new(Req)
+	req := new(SubmitFeedbackReq)
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&req)
 	if err != nil {
@@ -689,28 +724,38 @@ func SubmitFeedback(w http.ResponseWriter, r *http.Request, uid int) {
 		words[word] = id
 	}
 
-	q := "INSERT INTO peers VALUES "
 	for i := range req.Words {
-		q += fmt.Sprintf("(%d, '%s', %d),", uid, req.Pane, words[req.Words[i]])
+		err := DBI.ExecTXQuery("INSERT INTO peers VALUES (?, ?, ?)", uid, req.Pane, words[req.Words[i]])
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(sr.getJSON("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
+			return
+		}
 	}
-	q = q[:len(q)-1] // strip the last comma
-
-	_, err = DBI.SQLSession.Exec(q)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write(sr.getJSON("You can not submit feedback to yourself and multiple feedback submission to others are not supported"))
-		return
-	}
-
 	w.Write(sr.getJSON("success"))
 }
 
 func windowHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkLogin(w, r, false) {
-		http.Redirect(w, r, baseURL, http.StatusFound)
+		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-	WindowPage.Execute(w, baseURL)
+
+	uid, err := getSessionUID(r)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		NotAuthenticatedTemplate.Execute(w, template.HTML("session error: "+err.Error()))
+		return
+	}
+
+	vals := r.URL.Query()
+	if !checkAuthorization(w, vals, uid) {
+		return
+	}
+	err = WindowPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func feedbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -720,14 +765,14 @@ func feedbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, baseURL+"?feedbackpane="+pane, http.StatusFound)
 		return
 	}
-	FeedbackPage.Execute(w, baseURL)
+	FeedbackPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
 }
 func thanksHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkLogin(w, r, false) {
 		http.Redirect(w, r, baseURL, http.StatusFound)
 		return
 	}
-	ThanksPage.Execute(w, baseURL)
+	ThanksPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
 }
 
 /*
@@ -749,6 +794,26 @@ func getSessionUID(r *http.Request) (int, error) {
 	return DBI.GetIntValue(fmt.Sprintf("SELECT id FROM users WHERE username = '%s' limit 1", email))
 }
 
+// try to get username from session
+func getUserName(r *http.Request) string {
+	u := ""
+	session, err := CookieStore.Get(r, SessionName)
+	if err != nil {
+		fmt.Printf("Failed to get session: %s\n", err.Error())
+		return u
+	}
+	var ok bool
+	if u, ok = session.Values["Email"].(string); !ok {
+		fmt.Println("Could not get email from session cookie")
+		return u
+	}
+	if u == "" {
+		fmt.Println("Could not get email from session cookie")
+		return u
+	}
+	return u
+}
+
 /*
   Given uid generate md5 hash session id
 */
@@ -760,7 +825,7 @@ func generateSessionID(uid int) string {
 	return fmt.Sprintf("%x", md5.Sum(data))
 }
 
-func createNewSession(w *http.ResponseWriter, r *http.Request, user, token string) error {
+func createNewSession(w http.ResponseWriter, r *http.Request, user, token string) error {
 	session, err := CookieStore.Get(r, SessionName)
 	if err != nil {
 		return fmt.Errorf("Failed to get session from store: %s", err)
@@ -776,6 +841,6 @@ func createNewSession(w *http.ResponseWriter, r *http.Request, user, token strin
 		Path:   "/",
 		MaxAge: 43200, // 12 hours even though user can refresh token up to 24 hours.
 	}
-	session.Save(r, *w)
+	session.Save(r, w)
 	return nil
 }
