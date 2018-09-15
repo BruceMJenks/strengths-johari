@@ -272,7 +272,7 @@ var _ = Describe("API Handlers", func() {
 
 				By("the new user can not access the other users pane")
 				user2Cookie = authenitcateUser("{ \"user\": \"testuser2@user.email\", \"password\": \"cGFzc3dvcmQ=\"}")
-				req, err = http.NewRequest("GET", baseURL+"/window?pane="+user1Pane, nil)
+				req, err = http.NewRequest("GET", baseURL+"/get?submissions=t&pane="+user1Pane, nil)
 				req.Header.Add("X-Forwarded-Proto", "https")
 				req.AddCookie(user2Cookie)
 				resp, err = hc.Do(req)

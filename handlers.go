@@ -741,18 +741,7 @@ func windowHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uid, err := getSessionUID(r)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		NotAuthenticatedTemplate.Execute(w, template.HTML("session error: "+err.Error()))
-		return
-	}
-
-	vals := r.URL.Query()
-	if !checkAuthorization(w, vals, uid) {
-		return
-	}
-	err = WindowPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
+	err := WindowPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
 	if err != nil {
 		fmt.Println(err)
 	}
