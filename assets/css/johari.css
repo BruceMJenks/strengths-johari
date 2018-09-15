@@ -35,13 +35,25 @@ td:hover {
 .windowtitle {
   background-color: #669999;
   color: #003333;
-  text-align: center;
 }
 
 .windowwords {
   
 }
 
+html { font-size: 12px }
+
+.list-group-item {
+  display: list-item;
+  border: 0px;
+  margin-left: 10px;
+}
+
+.divider{
+  width:5px;
+  height:auto;
+  display:inline-block;
+}
 
 /* CSS SPINNER */
 

@@ -53,19 +53,24 @@
     <div class="col-sm-8">
       <p></p>
 
-      <div class="jumbotron">
-          <h1 class="display-5"><center>Personal Strength Finder Tool</center></h1>
-          <p class="lead">This tool uses the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> as a framework to help you find your personal strengths</p>
-          <hr class="my-4">
-          <p class=""><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
-            <ol>
-              <li>Select up to 20 words that you think bests describes your personality from the table below</li>
-              <li>A link will be generated for you to share with peers and request they select up to 20 words that describes their perception of you</li>
-              <li>As users submit their feedback you can view your window by clicking on "<a href="/window" target="_blank">My Current Window</a>" link at the top</li>
-              <li>All created windows will b eavailable from the "Previous Windows" dropdown menu</li>
-            </ol>
-          </p>
+      <div class="card">
+          <div class="card-header text-center windowtitle">
+             Personal Strength Finder Tool
+          </div>
+          <div class="card-body">
+            <h5 class="card-title"></h5>
+            <p class="card-text">This tool uses the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> as a framework to help you find your personal strengths.</p>
+            <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
+              <ol class="list-group">
+                  <li class="list-group-item">Select up to 20 words that you think bests describes your personality from the table below</li>
+                  <li class="list-group-item">A link will be generated for you to share with peers and request they select up to 20 words that describes their perception of you</li>
+                  <li class="list-group-item">As users submit their feedback you can view your window by clicking on "<a href="/window" target="_blank">My Current Window</a>" link at the top</li>
+                  <li class="list-group-item">All created windows will b eavailable from the "Previous Windows" dropdown menu</li>
+                </ol>
+              </p>
+          </div>
         </div>
+        <hr>
       </div>
     </div> <!-- END COLUMN -->
     <div class="col-sm-2"></div>
@@ -128,24 +133,28 @@
       <p></p>
       <div id="DisplayPane"></div>
 
-      <div class="jumbotron">
-          <h1 class="display-5"><center>Personal Strength Finder Tool</center></h1>
-          <p class="lead">This tool uses the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> as a framework to help you find your personal strengths</p>
-          <hr class="my-4">
-          <p class=""><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
-            <p><ul>
-                <li><b>Arena:</b> Adjectives/Themes that are selected by both you and your peers are placed into the Open or Arena quadrant</li>
-                <li><b>Facade:</b> Adjectives/Themes selected only by you and not by any of your peers are placed into the Hidden or Façade quadrant</li>
-                <li><b>Blind:</b> Adjectives/Themes that are not selected by you but selected by your peers are placed into the Blind Spot quadrant</li>
-                <li><b>Unknown:</b> Adjectives/Themes that were not selected by either you or your peers remain in the Unknown quadrant</li>
-              </ul></p>
-              <p>Please use this link to request feedback from your peers</p>
-              <p><div id="shareable-link"></div></p>
-          </p>
+      <div class="card">
+          <div class="card-header text-center windowtitle">
+             Welcome to your very own personality window pane!
+          </div>
+          <div class="card-body">
+            <h5 class="card-title"></h5>
+            <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
+              <ul class="list-group">
+                  <li class="list-group-item"><b>Arena:</b> Adjectives/Themes that are selected by both you and your peers are placed into the Open or Arena quadrant</li>
+                  <li class="list-group-item"><b>Facade:</b> Adjectives/Themes selected only by you and not by any of your peers are placed into the Hidden or Façade quadrant</li>
+                  <li class="list-group-item"><b>Blind:</b> Adjectives/Themes that are not selected by you but selected by your peers are placed into the Blind Spot quadrant</li>
+                  <li class="list-group-item"><b>Unknown:</b> Adjectives/Themes that were not selected by either you or your peers remain in the Unknown quadrant</li>
+                </ul>
+              </p>
+          </div>
         </div>
-
+        <div class="card-footer text-muted">
+            <div id="SumbissionStats"></div>
+        </div>
+      </div>
       <p></p>
-      <div id="SumbissionStats"></div>
+      <div id="SumbissionStatsOLD"></div>
     </div> <!-- END COLUMN -->
     <div class="col-sm-2"></div>
   </div> <!-- END ROW -->
@@ -165,23 +174,23 @@
   <div class="row">
     <div class="col-sm-1"></div>
     <div class="col-sm-10">
-      <form class="form-inline" onSubmit="return false;">
-        
-        <div class="form-group">
-          <label class="" for="SearchUser">User</label>
-          <input type="text" class="form-control" id="SearchUser" placeholder="Search Users">
-        </div>
-        <div class="form-group">
-          <label class="" for="SearchTheme">Theme</label>
-          <input type="text" class="form-control" id="SearchTheme" placeholder="Search Themes">
-        </div>
-        <div class="form-group">
-          <label class="" for="SearchADJ">Words</label>
-          <input type="text" class="form-control" id="SearchADJ" placeholder="Search Adjectives">
-        </div>
-        <button type="submit" class="btn btn-primary" onclick="FilterHistory(true);">Filter</button>
-        <button type="submit" class="btn btn-primary" onclick="ClearFilterHistory();">Clear</button>
-      </form>
+
+        <form class="form-inline">
+  
+            <label class="sr-only" for="SearchUser">User</label>
+            <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchUser" placeholder="Search Users">
+            
+            <label class="sr-only" for="SearchTheme">Theme</label>
+            <input type="text"  class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchTheme" placeholder="Search Themes">
+ 
+            <label class="sr-only" for="SearchADJ">Words</label>
+            <input type="text"  class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchADJ" placeholder="Search Words">
+          
+            <button type="submit" onclick="FilterHistory(true);" class="btn btn-primary">Filter</button>
+            <div class="divider"></div>
+            <button type="submit" onclick="ClearFilterHistory();" class="btn btn-primary">Clear</button>
+          </form>
+
       <p></p>
       <div id="SumbissionHistory"></div>
     </div> <!-- END COLUMN -->
