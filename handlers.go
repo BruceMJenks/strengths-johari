@@ -358,9 +358,7 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if vals.Get("user") == "t" {
-		if checkAuthorization(w, vals, uid) {
-			writeUserInfo(w, vals)
-		}
+		writeUserInfo(w, vals)
 	}
 	if vals.Get("history") == "t" {
 		if checkAuthorization(w, vals, uid) {
@@ -498,6 +496,11 @@ func writeJCWindowPanes(w http.ResponseWriter, vals url.Values, uid int) {
 	WriteJSONResponse(w, res)
 }
 
+// UserInfoResp returns subject email address for given session ide
+type UserInfoResp struct {
+	Email string `json:"email"`
+}
+
 func writeUserInfo(w http.ResponseWriter, vals url.Values) {
 	sr := new(statusResponse)
 	var err error
@@ -508,10 +511,7 @@ func writeUserInfo(w http.ResponseWriter, vals url.Values) {
 		return
 	}
 
-	type Res struct {
-		Email string `json:"email"`
-	}
-	res := new(Res)
+	res := new(UserInfoResp)
 	res.Email, err = DBI.GetStringValue(fmt.Sprintf("SELECT DISTINCT u.username FROM users u JOIN subjects s ON s.uid = u.id WHERE s.session = '%s'", sess))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
