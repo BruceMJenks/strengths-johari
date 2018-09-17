@@ -53,7 +53,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := MainPage.Execute(w, HTMLTemplateVars{"peopi", *EnableOauth, baseURL})
+	err := MainPage.Execute(w, HTMLTemplateVars{getUserName(r), *EnableOauth, baseURL})
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -160,6 +160,12 @@ func registerUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if lr.Password == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write(sr.getJSON("password can not be blank"))
+		return
+	}
+
 	decodedPassword, err := base64.StdEncoding.DecodeString(lr.Password)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -168,7 +174,7 @@ func registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = NewUserMustNotExist(lr.User, string(decodedPassword))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusUnauthorized)
 		w.Write(sr.getJSON(err.Error()))
 		return
 	}
@@ -399,6 +405,12 @@ func writePreviousWindows(w http.ResponseWriter, uid int) {
 	WriteJSONResponse(w, res)
 }
 
+// WordListResp respsones to get?words=t request
+type WordListResp struct {
+	Words        []string          `json:"words"` // keep an array of strings so we can have clean sorted list
+	Descriptions map[string]string `json:"descriptions"`
+}
+
 /*
   Fetch words from database and write them to ResponseWriter
 */
@@ -407,14 +419,27 @@ func writeWords(w http.ResponseWriter) {
 	type APIResponse struct {
 		Words []string `json:"words"`
 	}
-	res := APIResponse{}
-	var err error
-	res.Words, err = DBI.GetStringList("SELECT word FROM words order by 1")
+	res := WordListResp{make([]string, 0), make(map[string]string)}
+	rows, err := DBI.GetRowSet(SELECT_WORDLIST_QUERY)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(sr.getJSON("Fetching words failed: " + err.Error()))
 		return
 	}
+
+	for rows.Next() {
+		var word string
+		var desc string
+		err := rows.Scan(&word, &desc)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write(sr.getJSON("Fetching words failed: " + err.Error()))
+			return
+		}
+		res.Words = append(res.Words, word)
+		res.Descriptions[word] = desc
+	}
+
 	WriteJSONResponse(w, res)
 }
 

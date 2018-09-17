@@ -23,3 +23,9 @@ function checkURLParms() {
                 window.location.href = "/feedback?pane=" + params['feedbackpane'];
         }
 }
+
+
+function PreparePage() {
+        $('[data-toggle="tooltip"]').tooltip()
+        $('#navbar-username').html('<a class="nav-link" href="#"><i class="fas fa-user"></i> ' + LoggedInUser + '</a>');
+}

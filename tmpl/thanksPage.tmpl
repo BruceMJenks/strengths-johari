@@ -5,10 +5,10 @@
 {{ template "headers" }}
 
 <script type="text/javascript">
-
+var LoggedInUser = "{{.Username}}";
 </script>
 </head>
-<body>
+<body onload="PreparePage();">
 
 
 {{ template "navbar" }}

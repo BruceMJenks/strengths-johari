@@ -33,6 +33,9 @@ func GetExistingUser(user string) (UserAccount, error) {
 	u := UserAccount{}
 	var err error
 	u.Token, err = GetToken(user)
+	if err == NoTokenFound {
+		return u, fmt.Errorf("Username or Password is incorrect")
+	}
 	return u, err
 }
 
@@ -54,7 +57,7 @@ func (u *UserAccount) MatchPassword(p string) error {
 	}
 
 	if t.RefreshToken.String != p {
-		return fmt.Errorf("Username or Password does not match")
+		return fmt.Errorf("Username or Password is incorrect")
 	}
 	return nil
 }

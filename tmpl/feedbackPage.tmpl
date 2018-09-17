@@ -5,10 +5,10 @@
 
 
 <script type="text/javascript">
-
+var LoggedInUser = "{{.Username}}";
 </script>
 </head>
-<body onload="PopulatePreviousWindows(); GetAllWords(); DisplayFeedbackItems();">
+<body onload="PreparePage(); PopulatePreviousWindows(); GetAllWords(); DisplayFeedbackItems();">
 {{template "navbar"}}
 
 

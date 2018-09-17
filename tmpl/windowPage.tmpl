@@ -6,6 +6,7 @@
 
 <script type="text/javascript">
 
+var LoggedInUser = "{{.Username}}";
 var BASEURL = location.protocol + "//" + location.hostname + (location.port && ":" + location.port);
 function PopulatePanes() {
   GetUserWindows();
@@ -13,7 +14,7 @@ function PopulatePanes() {
 
 </script>
 </head>
-<body onload="PopulatePreviousWindows(); PopulatePanes();">
+<body onload="PreparePage(); PopulatePreviousWindows(); PopulatePanes();">
 
   {{ template "navbar" }}
 

@@ -45,7 +45,7 @@ function GetAllWords() {
         if ( i%5 == 0 && i != 0 || i == data.words.length-1 ) {
           // if this is the last record then make sure to add it
           if (i == data.words.length-1) {
-            row[i%5] = '<td id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';    
+            row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';    
           }
           
           tableHTML += "<tr>" + row.join("\n") + "</tr>";
@@ -53,7 +53,7 @@ function GetAllWords() {
             row[x] = "";
           }
         } 
-        row[i%5] = '<td id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';  
+        row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';  
       }
       tableHTML += "</tbody></table>";
       $('#WordTableContents').html(tableHTML);
@@ -469,6 +469,8 @@ function DisplayUserProfile(pane){
         '<li>Click submit at the bottom once you have finished making your selection</li>' +
       '</ol></p>' +
       '<p>Please note this is not an anonymous submission and your feedback is most welcome and appreciated!  The primary goal of this exercise is to help give the subjects insightful external perspectives that enable them to grow as individuals</p>');
+      
+      $('#UserProfileSubmissionContext').html()
     },
     error: function(data) {
       toogleLoadSpinner();
@@ -490,9 +492,11 @@ function registerUser() {
     type: 'POST',
     dataType: 'json',
     success: function (data) {
-      window.location.href = "/login";
+      alert("Successfuly created new user!")
+      //window.location.href = "/login";
     },
     error: function(data) {
+      console.log(JSON.stringify(data));
       alert(data.responseJSON.errmessage);
     },
     data: JSON.stringify(registerRequest)

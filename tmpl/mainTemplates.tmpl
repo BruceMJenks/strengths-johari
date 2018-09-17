@@ -38,8 +38,8 @@
             </li>
           </ul>
           <ul class="navbar-nav ml-auto">
-              <li class="nav-item"><a class="nav-link" href="#"><i class="fas fa-user"></i><div id="nabar-username"></div></a></li>
-              <li class="nav-item"><a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+              <li id="navbar-username" class="nav-item"></li>
+              <li class="nav-item"><a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
       </nav>
@@ -106,14 +106,17 @@
     <div class="col-sm-2"></div>
     <div class="col-sm-8">
       <p></p>
-      <div id="DsiplayPane" class="panel-group">
-        <div class="panel panel-success">
-          <div class="panel-heading"><center>THANKS</center></div>
-          <div class="panel-body">
-          <p><center><img src="/img/thanks.jpg" width="400"></img></center></p>
-          </div>
+
+      <div class="card">
+        <div class="card-header text-center windowtitle">
+           Appreciate your feedback
+        </div>
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <p class="card-text"><center><img src="/assets/img/thanks.jpg" width="400"></img></center></p>
         </div>
       </div>
+
     </div> <!-- END COLUMN -->
     <div class="col-sm-2"></div>
   </div> <!-- END ROW -->
@@ -225,12 +228,15 @@
               <div class="card-body">
                 <h5 class="card-title"></h5>
                 <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
-                  This program combines a cognitive psychology tool called the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> with Clifton Strength Finder themes.  You can create what is called a "Window" which looks like this image to the right.  Once you have created your window a link will be generated that you can share with your peers and they will be asked to choose up to 10 words they think best describes your personality.  Once all of your peers have submitted their feedback your window should be fully populated with insightful information!                  
+                  This tool uses the Johari Window as a framework to help you find your personal strengths.
+                  <p></p>
                   <p><div id="UserProfileSubmissionHelp"></div></p>
                 </p>
               </div>
             </div>
           </div>
+          <hr>
+          <p><div id="UserProfileSubmissionContext"></div></p>
           <hr>
       </div>
     </div> <!-- END COLUMN -->
@@ -290,6 +296,8 @@
     <div class="col-sm-8">
       <p></p>
 
+
+
       <div class="jumbotron">
           <h1 class="display-4"><center>Register / Login</center></h1>
           <p class="lead">Create a new user or sign in with an existing user</p>
@@ -316,6 +324,7 @@
               </div>
             </form>
       </div>
+
     </div> <!-- END COLUMN -->
     <div class="col-sm-2"></div>
   </div> <!-- END ROW -->  
