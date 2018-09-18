@@ -463,14 +463,14 @@ function DisplayUserProfile(pane){
     success: function (data) {
       toogleLoadSpinner();
       var emailname = '<span style="color:blue">' + data.email + "</span>"
-      $('#UserProfileSubmissionHelp').html('User with email address of ' + emailname+ ' has asked you to kindly submit personality feedback' +
+      $('#UserProfileSubmissionHelp').html('User with email address of <span class="userProfileText">' + data.email+ '</span> has asked you to kindly submit personality feedback' +
       '<p><ol>' +
-        '<li>Please select between 5 to 20 words that you think best describes ' + emailname + ' personality</li>' +
+        '<li>Please select between 5 to 20 words that you think best describes <span class="userProfileText">' + data.email + '</span> personality</li>' +
         '<li>Click submit at the bottom once you have finished making your selection</li>' +
       '</ol></p>' +
       '<p>Please note this is not an anonymous submission and your feedback is most welcome and appreciated!  The primary goal of this exercise is to help give the subjects insightful external perspectives that enable them to grow as individuals</p>');
       
-      $('#UserProfileSubmissionContext').html()
+      $('#UserProfileSubmissionContext').html('<p><center><span class="userProfileBigText">Feedback for ' + data.email + '</span></center></p>');
     },
     error: function(data) {
       toogleLoadSpinner();
@@ -492,7 +492,7 @@ function registerUser() {
     type: 'POST',
     dataType: 'json',
     success: function (data) {
-      alert("Successfuly created new user!")
+      alert("Successfuly created new user!  Please sign in to continue.")
       //window.location.href = "/login";
     },
     error: function(data) {

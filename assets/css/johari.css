@@ -41,6 +41,21 @@ td:hover {
   
 }
 
+
+.userProfileBigText{
+
+  text-shadow: 0px 1px 1px #000;
+  color: #000;
+  font-size: 40px;
+
+}
+
+.userProfileText {
+  color: blue;
+  text-shadow: 0px 1px 0px #000;
+
+}
+
 html { font-size: 12px }
 
 .list-group-item {
