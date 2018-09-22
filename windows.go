@@ -69,5 +69,36 @@ func GetWindowPanesFromDB(res *JCWindows, uid int, sess string) error {
 		fmt.Printf("Query:%s\nError:%s\n", cuq, err)
 		return err
 	}
+
+	//Normalize the themes and make sure there are not duplicates in CLIFTON_UNKOWN_QUERY and CLIFTON_FACADE_QUERY
+	knownWords := make([]string, 0)
+	knownWords = append(knownWords, res.Clifton.Arena...)
+	knownWords = append(knownWords, res.Clifton.Blind...)
+	res.Clifton.Unknown = pruneCliftonUnkown(res.Clifton.Unknown, knownWords)
+	res.Clifton.Facade = pruneCliftonUnkown(res.Clifton.Facade, knownWords)
+
 	return nil
+}
+
+func pruneCliftonUnkown(u, k []string) []string {
+	n := make([]string, 0)
+	matches := make(map[string]bool)
+	for i := range u {
+		matches[u[i]] = false
+	}
+
+	for i := range u {
+		for x := range k {
+			if u[i] == k[x] {
+				matches[u[i]] = true
+			}
+		}
+	}
+
+	for k, v := range matches {
+		if !v {
+			n = append(n, k)
+		}
+	}
+	return n
 }

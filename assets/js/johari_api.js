@@ -142,8 +142,8 @@ function SubmitFeedback() {
     }
   }
   
-  if (words.length < 5 || words.lenght > 10) {
-    alert("You must choose 5 to 10 words in order for this thing to work ;-)");
+  if (words.length < 5) {
+    alert("You must choose 5 or more words in order for this thing to work ;-)");
     return;
   }
   

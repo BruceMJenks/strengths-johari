@@ -113,7 +113,7 @@ const (
   (DEFAULT, "Harmony", "Collaborative", "When I asked him how he preferred to work, he replied, “Together.”"),
   (DEFAULT, "Ideation", "Artistic", "Her ideas were so imaginative that, for her, there was no box."),
   (DEFAULT, "Includer", "Welcoming", "She was our best new hire ambassador, gladly receiving new arrivals without obligation."),
-  (DEFAULT, "Individualizaton", "Astute", "Her discernment was remarkable. She could see things in people that others would overlook."),
+  (DEFAULT, "Individualization", "Astute", "Her discernment was remarkable. She could see things in people that others would overlook."),
   (DEFAULT, "Input", "Inquisitive", "She was so thirsty for knowledge; she never seemed to run out of questions to ask."),
   (DEFAULT, "Intellection", "Reflective", "He relished the times where he could quietly bend his thoughts backward, as looking in a mirror. Not to solve some problem per se, but just to gaze."),
   (DEFAULT, "Learner", "Curious", "There seemed to be no “off” button for her inquiring mind. The more she learned, the more she became aware of what she didn’t know."),
