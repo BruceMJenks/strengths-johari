@@ -81,7 +81,9 @@ run [ginkgo](https://github.com/onsi/ginkgo) to execute tests
 ginkgo 
 ```
 
+---
 
+Pivotal Software Inc does not maintain this software.  Please fork or submit pull requests to contribute to this project.
 
 
 
