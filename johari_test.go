@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/oauth2"
 
-	. "github.com/pivotal-gss/johari"
+	. "github.com/brucemjenks/johari"
 )
 
 func createUser(u string) {

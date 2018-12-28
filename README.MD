@@ -56,7 +56,7 @@ cf start johari
 
 ```
 go get github.com/tools/godep
-go get github.com/pivotal/johari
+go get github.com/brucemjenks/johari
 godep go install
 ```
 
