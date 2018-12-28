@@ -1,0 +1,18 @@
+---
+applications:
+  - name: johari
+    memory: 128M
+    instances: 1
+    buildpack: https://github.com/kr/heroku-buildpack-go.git
+    command: johari
+    env:
+      DBURL:
+      CLIENTID:
+      CLIENTSECRET:
+      OAUTHURLPARAMS:
+      OAUTHDOMAIN:
+      SESSION_NAME:
+      AUTH_URL:
+      TOKEN_URL:
+      COOKIE_STORE_KEY:
+      PRIVATE_ENCRYPTION_KEY:
