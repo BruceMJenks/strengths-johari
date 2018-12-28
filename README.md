@@ -83,7 +83,7 @@ ginkgo
 
 ---
 
-Pivotal Software Inc does not maintain this software.  Please fork or submit pull requests to contribute to this project.
+Please fork or submit pull requests to contribute to this project.
 
 
 
