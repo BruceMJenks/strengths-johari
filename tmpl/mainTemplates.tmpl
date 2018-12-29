@@ -1,0 +1,333 @@
+{{ define "headers"}}
+
+  <title>Clifton Johari Window</title>
+  <link href="/assets/img/window.ico" name="favicon" rel="shortcut icon" type="image/vnd.microsoft.icon" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="/assets/css/johari.css">
+  <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
+
+  <script type="text/javascript" src="/assets/js/johari_api.js"></script>
+  <script type="text/javascript" src="/assets/js/johari.js"></script>
+  
+{{ end }}
+
+{{ define "navbar" }}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">Johari Window</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link" href="/window">My Current Window</a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Previous Windows
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                  <div id="PreviousWindowItems"></div>
+              </div>
+            </li>
+          </ul>
+          <ul class="navbar-nav ml-auto">
+              <li id="navbar-username" class="nav-item"></li>
+              <li class="nav-item"><a class="nav-link" href="/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+      </nav>
+{{ end }}
+
+
+{{ define "startpage" }}
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+
+      <div class="card">
+          <div class="card-header text-center windowtitle">
+             Personal Strength Finder Tool
+          </div>
+          <div class="card-body">
+            <h5 class="card-title"></h5>
+            <p class="card-text">This tool uses the <a href="https://en.wikipedia.org/wiki/Johari_window" target="_blank">Johari Window</a> as a framework to help you find your personal strengths.</p>
+            <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
+              <ol class="list-group">
+                  <li class="list-group-item">Select 5 or more words that you think bests describes your personality from the table below</li>
+                  <li class="list-group-item">A link will be generated for you to share with peers and request they select 5 or more words that describes their perception of you</li>
+                  <li class="list-group-item">As users submit their feedback you can view your window by clicking on "<a href="/window" target="_blank">My Current Window</a>" link at the top</li>
+                  <li class="list-group-item">All created windows will b eavailable from the "Previous Windows" dropdown menu</li>
+                </ol>
+              </p>
+          </div>
+        </div>
+        <hr>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form class="form-inline" onSubmit="return false;">
+          <div class="form-group">
+            <label class="" for="Nickname">Nickname</label>
+            <input type="text" class="form-control" id="Nickname" placeholder="My New Window">
+          </div>
+          <button type="submit" class="btn btn-primary" onclick="CreateNewWindow();">Create</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div style="position:fixed;top:50%;left:50%" class="" id="loadspinner"></div>
+
+{{ end }}
+
+
+{{ define "thanks" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+
+      <div class="card">
+        <div class="card-header text-center windowtitle">
+           Appreciate your feedback
+        </div>
+        <div class="card-body">
+          <h5 class="card-title"></h5>
+          <p class="card-text"><center><img src="/assets/img/thanks.jpg" width="400"></img></center></p>
+        </div>
+      </div>
+
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+    
+</div> <!-- END CONTAINER -->
+
+<p></p>
+{{ end }}
+
+{{ define "window" }}
+
+<div class="container">
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DisplayPane"></div>
+
+      <div class="card">
+          <div class="card-header text-center windowtitle">
+             Welcome to your very own personality window pane!
+          </div>
+          <div class="card-body">
+            <h5 class="card-title"></h5>
+            <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
+              <ul class="list-group">
+                  <li class="list-group-item"><b>Arena:</b> Adjectives/Themes that are selected by both you and your peers are placed into the Open or Arena quadrant</li>
+                  <li class="list-group-item"><b>Facade:</b> Adjectives/Themes selected only by you and not by any of your peers are placed into the Hidden or Façade quadrant</li>
+                  <li class="list-group-item"><b>Blind:</b> Adjectives/Themes that are not selected by you but selected by your peers are placed into the Blind Spot quadrant</li>
+                  <li class="list-group-item"><b>Unknown:</b> Adjectives/Themes that were not selected by either you or your peers remain in the Unknown quadrant</li>
+                </ul>
+              </p>
+              <p class="cart-text">Please use this link to request feedback from your peers</p>
+              <p><div id="shareable-link"></div></p>
+          </div>
+        </div>
+        <div class="card-footer text-muted">
+            <div id="SumbissionStats"></div>
+        </div>
+      </div>
+      <p></p>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-5">
+      <div id="JohariWindow"></div>
+    </div> <!-- END COLUMN -->
+    
+    <div class="col-sm-5">
+      <div id="CliftonWindow"></div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-1"></div>
+  </div> <!-- END ROW -->
+  <hr>
+  <div class="row">
+    <div class="col-sm-1"></div>
+    <div class="col-sm-10">
+
+        <form class="form-inline">
+  
+            <label class="sr-only" for="SearchUser">User</label>
+            <input type="text" class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchUser" placeholder="Search Users">
+            
+            <label class="sr-only" for="SearchTheme">Clifton Theme</label>
+            <input type="text"  class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchTheme" placeholder="Search Themes">
+ 
+            <label class="sr-only" for="SearchADJ">Johari Words</label>
+            <input type="text"  class="form-control mb-2 mr-sm-2 mb-sm-0" id="SearchADJ" placeholder="Search Words">
+          
+            <button type="submit" onclick="FilterHistory(true);" class="btn btn-primary">Filter</button>
+            <div class="divider"></div>
+            <button type="submit" onclick="ClearFilterHistory();" class="btn btn-primary">Clear</button>
+          </form>
+
+      <p></p>
+      <div id="SumbissionHistory"></div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-1"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTIANER -->
+
+<div  style="position:fixed;top:50%;left:50%" id="GetWindowsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetSubmissionSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="PopWindowPanesSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetHistorySpinner"></div>
+
+{{ end }}
+
+
+{{ define "feedback" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div id="DsiplayPane" class="panel-group">
+
+
+          <div class="card">
+              <div class="card-header text-center windowtitle">
+                 Submitting Feedback
+              </div>
+              <div class="card-body">
+                <h5 class="card-title"></h5>
+                <p class="card-text"><img src="/assets/img/johari-window.PNG" width="300" ALIGN=right></img>
+                  This tool uses the Johari Window as a framework to help you find your personal strengths.
+                  <p></p>
+                  <p><div id="UserProfileSubmissionHelp"></div></p>
+                </p>
+              </div>
+            </div>
+          </div>
+          <hr>
+          <p><div id="UserProfileSubmissionContext"></div></p>
+          <hr>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+        <div style="text-align: center;" id="WordTableContents"></div>
+        <form id="feedbackform" class="form-inline" onSubmit="return false;">
+          <button type="submit" class="btn btn-primary" onclick="SubmitFeedback();">Submit</button>
+        </form>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->
+  
+</div> <!-- END CONTAINER -->
+
+<p></p>
+<div  style="position:fixed;top:50%;left:50%" id="GetAllWordsSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="GetUserInfoSpinner"></div>
+<div  style="position:fixed;top:50%;left:50%" id="SubmitFeedbackSpinner"></div>
+
+{{ end }}
+
+
+{{ define "loginOauth" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+      <div class="panel-group">
+        <div class="panel panel-success">
+          <div class="panel-heading"><center>Register / Login</center></div>
+          <div class="panel-body">
+            
+            <p>Sign in with Google Oauth:</p> <div class="g-signin2" data-onsuccess="onSignIn" onclick=""></div>
+
+          </div>
+        </div>
+      </div>
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->  
+</div> <!-- END CONTAINER -->
+
+{{ end }}
+
+{{ define "loginInternal" }}
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8">
+      <p></p>
+
+
+
+      <div class="jumbotron">
+          <h1 class="display-4"><center>Register / Login</center></h1>
+          <p class="lead">Create a new user or sign in with an existing user</p>
+          <hr class="my-4">
+          <form onSubmit="return false;">
+              <div class="form-group row">
+                <label for="inputEmail3" class="col-sm-2 col-form-label">Email or Username</label>
+                <div class="col-sm-10">
+                  <input id="usernameField" type="email" class="form-control" id="inputEmail3" placeholder="Email">
+                </div>
+              </div>
+              
+              <div class="form-group row">
+                <label for="inputPassword3" class="col-sm-2 col-form-label">Password</label>
+                <div class="col-sm-10">
+                  <input id="userpasswordField" type="password" class="form-control" id="inputPassword3" placeholder="Password">
+                </div>
+              </div>
+              
+              <div class="form-group row">
+                <div class="offset-sm-2 col-sm-10">
+                  <button type="submit" onclick="loginUser();" class="btn btn-primary">Sign in</button> <button onclick="registerUser();" class="btn btn-info">Register</button>
+                </div>
+              </div>
+            </form>
+      </div>
+
+    </div> <!-- END COLUMN -->
+    <div class="col-sm-2"></div>
+  </div> <!-- END ROW -->  
+</div> <!-- END CONTAINER -->
+
+{{ end }}

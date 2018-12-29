@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {{ template "headers" }}
+
+
+<script type="text/javascript">
+
+var LoggedInUser = "{{.Username}}";
+var BASEURL = location.protocol + "//" + location.hostname + (location.port && ":" + location.port);
+function PopulatePanes() {
+  GetUserWindows();
+}
+
+</script>
+</head>
+<body onload="PreparePage(); PopulatePreviousWindows(); PopulatePanes();">
+
+  {{ template "navbar" }}
+
+  {{ template "window" }}
+
+
+</body>
+<footer>
+</footer>
+</html>
