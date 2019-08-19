@@ -184,18 +184,19 @@ func ParseServiceCred() (dbURL string) {
 		return
 	}
 	type Cred struct {
-		URI      string `json:"uri"`
-		Hostname string `json:"hostname"`
-		Port     int    `json:"port"`
-		Database string `json:"name"`
-		User     string `json:"username"`
-		Pass     string `json:"password"`
+		URI      string      `json:"uri"`
+		Hostname string      `json:"hostname"`
+		Port     interface{} `json:"port"`
+		Database string      `json:"name"`
+		User     string      `json:"username"`
+		Pass     string      `json:"password"`
 	}
 	type Obj struct {
 		Credentials Cred `json:"credentials"`
 	}
 	type DBService struct {
 		SQLService []Obj `json:"p-mysql"`
+		CLearDB    []Obj `json:"cleardb"`
 	}
 	MyService := new(DBService)
 
@@ -205,15 +206,28 @@ func ParseServiceCred() (dbURL string) {
 		return
 	}
 	// only care about the first one found because we hard coded it with p-mysql in DBService struct
-	for i := range MyService.SQLService {
-		dbURL = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
-			MyService.SQLService[i].Credentials.User,
-			MyService.SQLService[i].Credentials.Pass,
-			MyService.SQLService[i].Credentials.Hostname,
-			MyService.SQLService[i].Credentials.Port,
-			MyService.SQLService[i].Credentials.Database)
-		break
+	if len(MyService.SQLService) > 0 {
+		for i := range MyService.SQLService {
+			dbURL = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true",
+				MyService.SQLService[i].Credentials.User,
+				MyService.SQLService[i].Credentials.Pass,
+				MyService.SQLService[i].Credentials.Hostname,
+				MyService.SQLService[i].Credentials.Port.(int),
+				MyService.SQLService[i].Credentials.Database)
+			break
+		}
+	} else {
+		for i := range MyService.CLearDB {
+			dbURL = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+				MyService.CLearDB[i].Credentials.User,
+				MyService.CLearDB[i].Credentials.Pass,
+				MyService.CLearDB[i].Credentials.Hostname,
+				MyService.CLearDB[i].Credentials.Port.(string),
+				MyService.CLearDB[i].Credentials.Database)
+			break
+		}
 	}
+
 	if dbURL == "" {
 		fmt.Println("ERROR DBURL is not set!!")
 	}

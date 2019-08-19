@@ -45,7 +45,7 @@ function GetAllWords() {
         if ( i%5 == 0 && i != 0 || i == data.words.length-1 ) {
           // if this is the last record then make sure to add it
           if (i == data.words.length-1) {
-            row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';    
+            row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i].replace(/\s+/g, '-') + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';    
           }
           
           tableHTML += "<tr>" + row.join("\n") + "</tr>";
@@ -53,7 +53,7 @@ function GetAllWords() {
             row[x] = "";
           }
         } 
-        row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i] + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';  
+        row[i%5] = '<td data-toggle="tooltip" data-placement="bottom" title="'+ data.descriptions[data.words[i]] + '" id="adj-' + data.words[i].replace(/\s+/g, '-') + '" onclick="ToggleWord(\'' + data.words[i] + '\');">' + data.words[i] + '</td>';  
       }
       tableHTML += "</tbody></table>";
       $('#WordTableContents').html(tableHTML);
@@ -70,11 +70,11 @@ function ToggleWord(word) {
   unselectedColor = "#fff";
   if (SelectedWords.hasOwnProperty(word) && SelectedWords[word]) {
     SelectedWords[word] = false;
-    $('#adj-' + word).css("background-color", unselectedColor);
+    $('#adj-' + word.replace(/\s+/g, '-')).css("background-color", unselectedColor);
     return
   } 
   SelectedWords[word] = true;
-  $('#adj-' + word).css("background-color", selectedColor);
+  $('#adj-' + word.replace(/\s+/g, '-')).css("background-color", selectedColor);
 }
 
 /*
